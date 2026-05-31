@@ -8,15 +8,14 @@ Forge Core handles the **LLM call -> tool execution -> response** cycle. You sup
 
 ```bash
 go get github.com/katasec/forge-core
-go get github.com/katasec/forge-core/provider/anthropic  # optional
-go get github.com/katasec/forge-core/provider/openai      # optional
-go get github.com/katasec/forge-core/provider/xai         # optional: xAI Responses API with web search
+go get github.com/katasec/forge-core/provider/xai     # xAI Responses API with tools, web search, and citations
+go get github.com/katasec/forge-core/provider/openai  # OpenAI Responses API
 ```
 
 ## Quick Start
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+export XAI_API_KEY=xai-...
 ```
 
 ```go
@@ -29,11 +28,11 @@ import (
     "os"
 
     "github.com/katasec/forge-core"
-    "github.com/katasec/forge-core/provider/anthropic"
+    "github.com/katasec/forge-core/provider/xai"
 )
 
 func main() {
-    provider := anthropic.New(os.Getenv("ANTHROPIC_API_KEY"), "claude-sonnet-4-20250514")
+    provider := xai.New(os.Getenv("XAI_API_KEY"), xai.ModelGrok4FastNonReasoning)
 
     agent, err := forge.NewAgent(forge.Config{
         Provider:     provider,
@@ -52,7 +51,30 @@ func main() {
 }
 ```
 
-Swap to OpenAI by changing one import:
+xAI also supports built-in web search and citation access:
+
+```go
+provider := xai.New(
+    os.Getenv("XAI_API_KEY"),
+    xai.ModelGrok4FastNonReasoning,
+    xai.WithWebSearch(),
+)
+agent, err := forge.NewAgent(forge.Config{Provider: provider})
+if err != nil {
+    log.Fatal(err)
+}
+
+resp, err := agent.Ask(context.Background(), "What changed in Go recently?")
+if err != nil {
+    log.Fatal(err)
+}
+
+for _, c := range provider.LastCitations() {
+    fmt.Printf("[%s] %s\n", c.Title, c.URL)
+}
+```
+
+Use OpenAI by changing the provider import and constructor:
 
 ```go
 import "github.com/katasec/forge-core/provider/openai"
@@ -62,25 +84,11 @@ provider := openai.New(os.Getenv("OPENAI_API_KEY"), openai.ModelGPT54Nano)
 
 The `openai` package uses the OpenAI Responses API, including text and image content.
 
-Or use the xAI Responses API with built-in web search:
-
-```go
-import "github.com/katasec/forge-core/provider/xai"
-
-provider := xai.New(os.Getenv("XAI_API_KEY"), xai.ModelGrok4FastNonReasoning, xai.WithWebSearch())
-
-// After running the agent, access citations:
-citations := provider.LastCitations()
-for _, c := range citations {
-    fmt.Printf("[%s] %s\n", c.Title, c.URL)
-}
-```
-
 ## Core Concepts
 
 ### Provider
 
-The `Provider` interface makes a single LLM call. Forge ships with three built-in providers, or you can implement your own:
+The `Provider` interface makes a single LLM call. Forge includes first-class xAI and OpenAI providers, or you can implement your own:
 
 ```go
 type Provider interface {
