@@ -11,6 +11,7 @@ import (
 	"github.com/katasec/forge-core/message"
 )
 
+// buildRequest adapts a Forge provider request into xAI's OpenAI-compatible parameters.
 func (p *XAIProvider) buildRequest(req forge.ProviderRequest) (responses.ResponseNewParams, error) {
 	input, err := toXAIMessages(req.Messages)
 	if err != nil {
@@ -29,6 +30,7 @@ func (p *XAIProvider) buildRequest(req forge.ProviderRequest) (responses.Respons
 	return apiReq, nil
 }
 
+// toXAIMessages converts Forge conversation messages into xAI response input items.
 func toXAIMessages(msgs []forge.Message) (responses.ResponseInputParam, error) {
 	var items responses.ResponseInputParam
 
@@ -45,6 +47,7 @@ func toXAIMessages(msgs []forge.Message) (responses.ResponseInputParam, error) {
 	return items, nil
 }
 
+// toXAIMessage converts one Forge message into xAI response input items.
 func toXAIMessage(m forge.Message) ([]responses.ResponseInputItemUnionParam, error) {
 	if m.Role == forge.RoleTool && len(m.ToolResults()) > 0 {
 		return toXAIToolResults(m.ToolResults()), nil
@@ -58,6 +61,7 @@ func toXAIMessage(m forge.Message) ([]responses.ResponseInputItemUnionParam, err
 	return []responses.ResponseInputItemUnionParam{item}, nil
 }
 
+// toXAIToolResults converts Forge tool results into xAI function call outputs.
 func toXAIToolResults(results []forge.ToolResult) []responses.ResponseInputItemUnionParam {
 	items := make([]responses.ResponseInputItemUnionParam, 0, len(results))
 	for _, tr := range results {
@@ -66,6 +70,7 @@ func toXAIToolResults(results []forge.ToolResult) []responses.ResponseInputItemU
 	return items
 }
 
+// toXAITools converts Forge tool definitions into xAI request tools.
 func toXAITools(defs []forge.ToolDefinition) []requestTool {
 	tools := make([]requestTool, 0, len(defs))
 	for _, d := range defs {
@@ -79,6 +84,7 @@ func toXAITools(defs []forge.ToolDefinition) []requestTool {
 	return tools
 }
 
+// providerResponse adapts an xAI response into Forge's provider response and citations.
 func providerResponse(resp *response) (*forge.ProviderResponse, []Citation) {
 	content, toolCalls, citations := fromXAIOutput(resp.Output)
 
@@ -100,6 +106,7 @@ func providerResponse(resp *response) (*forge.ProviderResponse, []Citation) {
 	}, citations
 }
 
+// fromXAIOutput extracts text, function calls, and citations from xAI output items.
 func fromXAIOutput(output []outputItem) (string, []forge.ToolCall, []Citation) {
 	var content string
 	var toolCalls []forge.ToolCall
@@ -123,6 +130,7 @@ func fromXAIOutput(output []outputItem) (string, []forge.ToolCall, []Citation) {
 	return content, toolCalls, citations
 }
 
+// fromXAIMessageOutput extracts text and citations from xAI message content.
 func fromXAIMessageOutput(content []contentItem) (string, []Citation) {
 	var text string
 	var citations []Citation
@@ -136,6 +144,7 @@ func fromXAIMessageOutput(content []contentItem) (string, []Citation) {
 	return text, citations
 }
 
+// fromXAIAnnotations converts xAI URL annotations into Forge citations.
 func fromXAIAnnotations(annotations []annotation) []Citation {
 	var citations []Citation
 	for _, a := range annotations {
@@ -152,6 +161,7 @@ func fromXAIAnnotations(annotations []annotation) []Citation {
 	return citations
 }
 
+// finishReason reports tool_use when the xAI response contains function calls.
 func finishReason(toolCalls []forge.ToolCall) forge.FinishReason {
 	if len(toolCalls) > 0 {
 		return forge.FinishReasonToolUse

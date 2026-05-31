@@ -80,6 +80,7 @@ func (p *XAIProvider) Generate(ctx context.Context, req forge.ProviderRequest) (
 	return providerResp, nil
 }
 
+// requestTools combines provider-level xAI tools with request-level function tools.
 func (p *XAIProvider) requestTools(defs []forge.ToolDefinition) []requestTool {
 	var tools []requestTool
 	tools = append(tools, p.tools...)
@@ -89,12 +90,14 @@ func (p *XAIProvider) requestTools(defs []forge.ToolDefinition) []requestTool {
 	return tools
 }
 
+// storeCitations remembers citations from the latest xAI response.
 func (p *XAIProvider) storeCitations(citations []Citation) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.lastCitations = citations
 }
 
+// newSDKClient builds the OpenAI-compatible SDK client from provider configuration.
 func (p *XAIProvider) newSDKClient() openaisdk.Client {
 	return openaisdk.NewClient(
 		option.WithAPIKey(p.apiKey),

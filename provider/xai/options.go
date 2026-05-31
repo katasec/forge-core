@@ -56,6 +56,7 @@ func ExcludedHandles(handles ...string) XSearchOption {
 	return func(c *xSearchConfig) { c.ExcludedHandles = handles }
 }
 
+// webSearchTool builds the xAI web_search request tool from option state.
 func webSearchTool(cfg *webSearchConfig) requestTool {
 	t := requestTool{Type: "web_search"}
 	if len(cfg.AllowedDomains) > 0 {
@@ -67,6 +68,7 @@ func webSearchTool(cfg *webSearchConfig) requestTool {
 	return t
 }
 
+// xSearchTool builds the xAI x_search request tool from option state.
 func xSearchTool(cfg *xSearchConfig) requestTool {
 	t := requestTool{Type: "x_search"}
 	if len(cfg.AllowedHandles) > 0 {

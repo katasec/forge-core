@@ -59,6 +59,7 @@ func (p *OpenAIProvider) Generate(ctx context.Context, req forge.ProviderRequest
 	return providerResponse(apiResp)
 }
 
+// newSDKClient builds the OpenAI SDK client from provider configuration.
 func (p *OpenAIProvider) newSDKClient() openaisdk.Client {
 	return openaisdk.NewClient(
 		option.WithAPIKey(p.apiKey),

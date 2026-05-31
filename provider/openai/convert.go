@@ -11,6 +11,7 @@ import (
 	"github.com/katasec/forge-core"
 )
 
+// buildRequest adapts a Forge provider request into OpenAI Responses parameters.
 func (p *OpenAIProvider) buildRequest(req forge.ProviderRequest) (responses.ResponseNewParams, error) {
 	input, err := toOpenAIMessages(req.Messages)
 	if err != nil {
@@ -25,6 +26,7 @@ func (p *OpenAIProvider) buildRequest(req forge.ProviderRequest) (responses.Resp
 	}, nil
 }
 
+// providerResponse adapts an OpenAI Responses result into Forge's provider response.
 func providerResponse(apiResp *responses.Response) (*forge.ProviderResponse, error) {
 	text := apiResp.OutputText()
 	if text == "" {
@@ -44,6 +46,7 @@ func providerResponse(apiResp *responses.Response) (*forge.ProviderResponse, err
 	}, nil
 }
 
+// toOpenAIMessages converts Forge conversation messages into OpenAI response input items.
 func toOpenAIMessages(messages []forge.Message) (responses.ResponseInputParam, error) {
 	items := make(responses.ResponseInputParam, 0, len(messages))
 	for _, msg := range messages {
@@ -60,6 +63,7 @@ func toOpenAIMessages(messages []forge.Message) (responses.ResponseInputParam, e
 	return items, nil
 }
 
+// toOpenAIMessage converts one Forge message into one OpenAI response input item.
 func toOpenAIMessage(msg forge.Message) (responses.ResponseInputItemUnionParam, error) {
 	content, err := toOpenAIContent(msg.Role, msg.Content)
 	if err != nil {
@@ -68,6 +72,7 @@ func toOpenAIMessage(msg forge.Message) (responses.ResponseInputItemUnionParam, 
 	return responses.ResponseInputItemParamOfMessage(content, responses.EasyInputMessageRole(msg.Role)), nil
 }
 
+// toOpenAIContent converts Forge content blocks into OpenAI message content parts.
 func toOpenAIContent(role forge.Role, blocks []forge.ContentBlock) (responses.ResponseInputMessageContentListParam, error) {
 	content := make(responses.ResponseInputMessageContentListParam, 0, len(blocks))
 	for _, block := range blocks {
@@ -80,6 +85,7 @@ func toOpenAIContent(role forge.Role, blocks []forge.ContentBlock) (responses.Re
 	return content, nil
 }
 
+// toOpenAIContentBlock converts one Forge content block into an OpenAI content part.
 func toOpenAIContentBlock(role forge.Role, block forge.ContentBlock) (responses.ResponseInputContentUnionParam, error) {
 	switch block.Type {
 	case forge.ContentTypeText:
@@ -93,10 +99,12 @@ func toOpenAIContentBlock(role forge.Role, block forge.ContentBlock) (responses.
 	}
 }
 
+// toOpenAITextContent wraps text as an OpenAI input text content part.
 func toOpenAITextContent(_ forge.Role, text string) responses.ResponseInputContentUnionParam {
 	return responses.ResponseInputContentParamOfInputText(text)
 }
 
+// toOpenAIImageContent wraps Forge image content as an OpenAI input image content part.
 func toOpenAIImageContent(role forge.Role, block forge.ContentBlock) (responses.ResponseInputContentUnionParam, error) {
 	if role != forge.RoleUser {
 		return responses.ResponseInputContentUnionParam{}, fmt.Errorf("openai image content is only supported for user messages")
@@ -117,6 +125,7 @@ func toOpenAIImageContent(role forge.Role, block forge.ContentBlock) (responses.
 	}, nil
 }
 
+// openAIImageURL returns the URL or data URL OpenAI expects for image input.
 func openAIImageURL(image forge.ImageContent) (string, error) {
 	if image.URL != "" {
 		return image.URL, nil

@@ -6,6 +6,7 @@ import (
 	"github.com/katasec/forge-core"
 )
 
+// buildRequest adapts a Forge provider request into Anthropic Messages parameters.
 func (p *AnthropicProvider) buildRequest(req forge.ProviderRequest) anthropicsdk.MessageNewParams {
 	return anthropicsdk.MessageNewParams{
 		Model:     anthropicsdk.Model(p.model),
@@ -15,6 +16,7 @@ func (p *AnthropicProvider) buildRequest(req forge.ProviderRequest) anthropicsdk
 	}
 }
 
+// systemPrompt returns Anthropic's top-level system prompt blocks.
 func systemPrompt(prompt string) []anthropicsdk.TextBlockParam {
 	if prompt == "" {
 		return nil
@@ -22,6 +24,7 @@ func systemPrompt(prompt string) []anthropicsdk.TextBlockParam {
 	return []anthropicsdk.TextBlockParam{{Text: prompt}}
 }
 
+// toAnthropicMessages converts Forge conversation messages into Anthropic message params.
 func toAnthropicMessages(messages []forge.Message) []anthropicsdk.MessageParam {
 	out := make([]anthropicsdk.MessageParam, 0, len(messages))
 	for _, m := range messages {
@@ -33,6 +36,7 @@ func toAnthropicMessages(messages []forge.Message) []anthropicsdk.MessageParam {
 	return out
 }
 
+// toAnthropicMessage converts one Forge message into an Anthropic message param.
 func toAnthropicMessage(message forge.Message) anthropicsdk.MessageParam {
 	if message.Role == forge.RoleAssistant {
 		return anthropicsdk.NewAssistantMessage(anthropicsdk.NewTextBlock(message.Text()))
@@ -40,6 +44,7 @@ func toAnthropicMessage(message forge.Message) anthropicsdk.MessageParam {
 	return anthropicsdk.NewUserMessage(anthropicsdk.NewTextBlock(message.Text()))
 }
 
+// providerResponse adapts an Anthropic message response into Forge's provider response.
 func providerResponse(apiResp *anthropicsdk.Message) *forge.ProviderResponse {
 	return &forge.ProviderResponse{
 		Messages:     []forge.Message{forge.AssistantText(textFromAnthropic(apiResp.Content))},
@@ -51,6 +56,7 @@ func providerResponse(apiResp *anthropicsdk.Message) *forge.ProviderResponse {
 	}
 }
 
+// textFromAnthropic returns the first text block from an Anthropic response.
 func textFromAnthropic(content []anthropicsdk.ContentBlockUnion) string {
 	for _, c := range content {
 		if c.Type == "text" {
@@ -60,6 +66,7 @@ func textFromAnthropic(content []anthropicsdk.ContentBlockUnion) string {
 	return ""
 }
 
+// finishReason maps Anthropic stop reasons onto Forge finish reasons.
 func finishReason(stopReason anthropicsdk.StopReason) forge.FinishReason {
 	if stopReason == anthropicsdk.StopReasonToolUse {
 		return forge.FinishReasonToolUse

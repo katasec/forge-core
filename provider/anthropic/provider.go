@@ -55,6 +55,7 @@ func (p *AnthropicProvider) Generate(ctx context.Context, req forge.ProviderRequ
 	return providerResponse(apiResp), nil
 }
 
+// newSDKClient builds the Anthropic SDK client from provider configuration.
 func (p *AnthropicProvider) newSDKClient() anthropicsdk.Client {
 	return anthropicsdk.NewClient(
 		option.WithAPIKey(p.apiKey),
