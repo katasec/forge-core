@@ -2,20 +2,6 @@ package xai
 
 import "encoding/json"
 
-type request struct {
-	Model string        `json:"model"`
-	Input []inputItem   `json:"input"`
-	Tools []requestTool `json:"tools,omitempty"`
-}
-
-type inputItem struct {
-	Role    string `json:"role,omitempty"`
-	Content string `json:"content,omitempty"`
-	Type    string `json:"type,omitempty"`
-	CallID  string `json:"call_id,omitempty"`
-	Output  string `json:"output,omitempty"`
-}
-
 type requestTool struct {
 	Type            string          `json:"type"`
 	Name            string          `json:"name,omitempty"`

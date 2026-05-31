@@ -3,45 +3,65 @@ package xai
 import (
 	"encoding/json"
 
+	openaisdk "github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+	"github.com/openai/openai-go/v3/shared"
+
 	"github.com/katasec/forge-core"
 	"github.com/katasec/forge-core/message"
 )
 
-func convertMessages(msgs []forge.Message, systemPrompt string) []inputItem {
-	var items []inputItem
-
-	if systemPrompt != "" {
-		items = append(items, inputItem{Role: "system", Content: systemPrompt})
+func (p *Provider) buildRequest(req forge.ProviderRequest) (responses.ResponseNewParams, error) {
+	input, err := convertMessages(req.Messages)
+	if err != nil {
+		return responses.ResponseNewParams{}, err
 	}
+
+	apiReq := responses.ResponseNewParams{
+		Model: shared.ResponsesModel(p.model),
+		Input: responses.ResponseNewParamsInputUnion{
+			OfInputItemList: input,
+		},
+	}
+	if req.SystemPrompt != "" {
+		apiReq.Instructions = openaisdk.String(req.SystemPrompt)
+	}
+	return apiReq, nil
+}
+
+func convertMessages(msgs []forge.Message) (responses.ResponseInputParam, error) {
+	var items responses.ResponseInputParam
 
 	for _, m := range msgs {
 		if m.Role == forge.RoleSystem {
 			continue
 		}
-		items = append(items, convertMessage(m)...)
+		converted, err := convertMessage(m)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, converted...)
 	}
-
-	return items
+	return items, nil
 }
 
-func convertMessage(m forge.Message) []inputItem {
+func convertMessage(m forge.Message) ([]responses.ResponseInputItemUnionParam, error) {
 	if m.Role == forge.RoleTool && len(m.ToolResults()) > 0 {
-		return convertToolResults(m.ToolResults())
+		return convertToolResults(m.ToolResults()), nil
 	}
-	return []inputItem{{
-		Role:    string(m.Role),
-		Content: m.Text(),
-	}}
+	if len(m.ToolCalls()) > 0 {
+		return nil, nil
+	}
+
+	role := responses.EasyInputMessageRole(m.Role)
+	item := responses.ResponseInputItemParamOfMessage(m.Text(), role)
+	return []responses.ResponseInputItemUnionParam{item}, nil
 }
 
-func convertToolResults(results []forge.ToolResult) []inputItem {
-	items := make([]inputItem, 0, len(results))
+func convertToolResults(results []forge.ToolResult) []responses.ResponseInputItemUnionParam {
+	items := make([]responses.ResponseInputItemUnionParam, 0, len(results))
 	for _, tr := range results {
-		items = append(items, inputItem{
-			Type:   "function_call_output",
-			CallID: tr.CallID,
-			Output: tr.Content,
-		})
+		items = append(items, responses.ResponseInputItemParamOfFunctionCallOutput(tr.CallID, tr.Content))
 	}
 	return items
 }

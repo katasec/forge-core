@@ -2,21 +2,29 @@ package xai
 
 import (
 	"context"
+	"encoding/json"
 
-	"github.com/katasec/forge-core/provider/internal/httpjson"
+	"github.com/openai/openai-go/v3/option"
+	"github.com/openai/openai-go/v3/responses"
 )
 
-func (p *Provider) sendRequest(ctx context.Context, req request) (*response, error) {
-	return httpjson.Post[request, response](ctx, httpjson.Request{
-		Client:      p.client,
-		URL:         p.baseURL + "/responses",
-		Headers:     bearerHeaders(p.apiKey),
-		ErrorPrefix: "xAI API error",
-	}, req)
+func (p *Provider) sendRequest(ctx context.Context, req responses.ResponseNewParams, tools []requestTool) (*response, error) {
+	opts := requestOptions(tools)
+	apiResp, err := p.sdk.Responses.New(ctx, req, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp response
+	if err := json.Unmarshal([]byte(apiResp.RawJSON()), &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }
 
-func bearerHeaders(apiKey string) map[string]string {
-	return map[string]string{
-		"Authorization": "Bearer " + apiKey,
+func requestOptions(tools []requestTool) []option.RequestOption {
+	if len(tools) == 0 {
+		return nil
 	}
+	return []option.RequestOption{option.WithJSONSet("tools", tools)}
 }

@@ -13,6 +13,9 @@ import (
 	"net/http"
 	"sync"
 
+	openaisdk "github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/option"
+
 	"github.com/katasec/forge-core"
 )
 
@@ -22,6 +25,7 @@ type Provider struct {
 	apiKey  string
 	model   string
 	client  *http.Client
+	sdk     openaisdk.Client
 	tools   []requestTool
 
 	mu            sync.Mutex
@@ -39,6 +43,7 @@ func New(apiKey string, model Model, opts ...Option) *Provider {
 	for _, opt := range opts {
 		opt(p)
 	}
+	p.sdk = p.newSDKClient()
 	return p
 }
 
@@ -60,13 +65,12 @@ func (p *Provider) LastCitations() []Citation {
 
 // Generate sends a request to the xAI Responses API.
 func (p *Provider) Generate(ctx context.Context, req forge.ProviderRequest) (*forge.ProviderResponse, error) {
-	apiReq := request{
-		Model: p.model,
-		Input: convertMessages(req.Messages, req.SystemPrompt),
-		Tools: p.requestTools(req.Tools),
+	apiReq, err := p.buildRequest(req)
+	if err != nil {
+		return nil, err
 	}
 
-	apiResp, err := p.sendRequest(ctx, apiReq)
+	apiResp, err := p.sendRequest(ctx, apiReq, p.requestTools(req.Tools))
 	if err != nil {
 		return nil, err
 	}
@@ -89,4 +93,12 @@ func (p *Provider) storeCitations(citations []Citation) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.lastCitations = citations
+}
+
+func (p *Provider) newSDKClient() openaisdk.Client {
+	return openaisdk.NewClient(
+		option.WithAPIKey(p.apiKey),
+		option.WithBaseURL(p.baseURL),
+		option.WithHTTPClient(p.client),
+	)
 }

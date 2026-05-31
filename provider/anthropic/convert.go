@@ -1,42 +1,57 @@
 package anthropic
 
-import "github.com/katasec/forge-core"
+import (
+	anthropicsdk "github.com/anthropics/anthropic-sdk-go"
 
-func (p *Provider) buildRequest(req forge.ProviderRequest) request {
-	return request{
-		Model:     p.model,
+	"github.com/katasec/forge-core"
+)
+
+func (p *Provider) buildRequest(req forge.ProviderRequest) anthropicsdk.MessageNewParams {
+	return anthropicsdk.MessageNewParams{
+		Model:     anthropicsdk.Model(p.model),
 		MaxTokens: 1024,
-		System:    req.SystemPrompt,
+		System:    systemPrompt(req.SystemPrompt),
 		Messages:  convertMessages(req.Messages),
 	}
 }
 
-func convertMessages(messages []forge.Message) []message {
-	out := make([]message, 0, len(messages))
+func systemPrompt(prompt string) []anthropicsdk.TextBlockParam {
+	if prompt == "" {
+		return nil
+	}
+	return []anthropicsdk.TextBlockParam{{Text: prompt}}
+}
+
+func convertMessages(messages []forge.Message) []anthropicsdk.MessageParam {
+	out := make([]anthropicsdk.MessageParam, 0, len(messages))
 	for _, m := range messages {
 		if m.Role == forge.RoleSystem {
 			continue
 		}
-		out = append(out, message{
-			Role:    string(m.Role),
-			Content: m.Text(),
-		})
+		out = append(out, convertMessage(m))
 	}
 	return out
 }
 
-func providerResponse(apiResp *response) *forge.ProviderResponse {
+func convertMessage(message forge.Message) anthropicsdk.MessageParam {
+	if message.Role == forge.RoleAssistant {
+		return anthropicsdk.NewAssistantMessage(anthropicsdk.NewTextBlock(message.Text()))
+	}
+	return anthropicsdk.NewUserMessage(anthropicsdk.NewTextBlock(message.Text()))
+}
+
+func providerResponse(apiResp *anthropicsdk.Message) *forge.ProviderResponse {
 	return &forge.ProviderResponse{
 		Messages:     []forge.Message{forge.AssistantText(textContent(apiResp.Content))},
 		FinishReason: finishReason(apiResp.StopReason),
 		Usage: forge.TokenUsage{
-			InputTokens:  apiResp.Usage.InputTokens,
-			OutputTokens: apiResp.Usage.OutputTokens,
+			InputTokens:  int(apiResp.Usage.InputTokens),
+			OutputTokens: int(apiResp.Usage.OutputTokens),
 		},
 	}
 }
 
-func textContent(content []content) string {
+func textContent(content []anthropicsdk.ContentBlockUnion) string {
 	for _, c := range content {
 		if c.Type == "text" {
 			return c.Text
@@ -45,8 +60,8 @@ func textContent(content []content) string {
 	return ""
 }
 
-func finishReason(stopReason string) forge.FinishReason {
-	if stopReason == "tool_use" {
+func finishReason(stopReason anthropicsdk.StopReason) forge.FinishReason {
+	if stopReason == anthropicsdk.StopReasonToolUse {
 		return forge.FinishReasonToolUse
 	}
 	return forge.FinishReasonStop

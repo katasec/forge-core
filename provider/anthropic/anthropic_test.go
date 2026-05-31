@@ -39,37 +39,32 @@ func TestGenerate(t *testing.T) {
 			t.Errorf("anthropic-version = %q, want %q", got, "2023-06-01")
 		}
 
-		var req request
+		var req apiRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			t.Fatalf("decode request: %v", err)
 		}
 		if req.Model != "claude-sonnet-4-20250514" {
 			t.Errorf("model = %q, want %q", req.Model, "claude-sonnet-4-20250514")
 		}
-		if req.System != "You are helpful." {
+		if len(req.System) != 1 || req.System[0].Text != "You are helpful." {
 			t.Errorf("system = %q, want %q", req.System, "You are helpful.")
 		}
 
-		resp := response{
-			Content:    []content{{Type: "text", Text: "Hello!"}},
+		resp := apiResponse{
+			ID:         "msg_test",
+			Type:       "message",
+			Role:       "assistant",
+			Model:      "claude-sonnet-4-20250514",
+			Content:    []contentBlock{{Type: "text", Text: "Hello!"}},
 			StopReason: "end_turn",
-			Usage:      usage{InputTokens: 10, OutputTokens: 5},
+			Usage:      usageBlock{InputTokens: 10, OutputTokens: 5},
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(resp)
 	}))
 	defer srv.Close()
 
-	p := New("test-key", "claude-sonnet-4-20250514")
-	// Override the endpoint to use the test server.
-	p.client = srv.Client()
-
-	// We need to redirect requests to our test server. Create a custom transport.
-	p.client.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
-		r.URL.Scheme = "http"
-		r.URL.Host = srv.Listener.Addr().String()
-		return http.DefaultTransport.RoundTrip(r)
-	})
+	p := New("test-key", "claude-sonnet-4-20250514", WithBaseURL(srv.URL))
 
 	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
 		SystemPrompt: "You are helpful.",
@@ -102,14 +97,7 @@ func TestGenerateAPIError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := New("bad-key", "claude-sonnet-4-20250514")
-	p.client = &http.Client{
-		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
-			r.URL.Scheme = "http"
-			r.URL.Host = srv.Listener.Addr().String()
-			return http.DefaultTransport.RoundTrip(r)
-		}),
-	}
+	p := New("bad-key", "claude-sonnet-4-20250514", WithBaseURL(srv.URL))
 
 	_, err := p.Generate(context.Background(), forge.ProviderRequest{
 		Messages: []forge.Message{forge.UserText("Hi")},
@@ -119,7 +107,27 @@ func TestGenerateAPIError(t *testing.T) {
 	}
 }
 
-// roundTripFunc adapts a function to http.RoundTripper.
-type roundTripFunc func(*http.Request) (*http.Response, error)
+type apiRequest struct {
+	Model  string         `json:"model"`
+	System []contentBlock `json:"system"`
+}
 
-func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+type apiResponse struct {
+	ID         string         `json:"id"`
+	Type       string         `json:"type"`
+	Role       string         `json:"role"`
+	Model      string         `json:"model"`
+	Content    []contentBlock `json:"content"`
+	StopReason string         `json:"stop_reason"`
+	Usage      usageBlock     `json:"usage"`
+}
+
+type contentBlock struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+}
+
+type usageBlock struct {
+	InputTokens  int `json:"input_tokens"`
+	OutputTokens int `json:"output_tokens"`
+}

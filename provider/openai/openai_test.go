@@ -127,6 +127,7 @@ func TestGenerateWithImageURL(t *testing.T) {
 			t.Fatalf("image content = %+v", image)
 		}
 
+		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response{
 			Output: []outputItem{{
 				Type:    "message",
@@ -187,4 +188,53 @@ func TestGenerateAPIError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for 429 response")
 	}
+}
+
+type request struct {
+	Model        string      `json:"model"`
+	Input        []inputItem `json:"input"`
+	Instructions string      `json:"instructions"`
+}
+
+type inputItem struct {
+	Role    string         `json:"role"`
+	Content []contentInput `json:"content"`
+}
+
+type contentInput struct {
+	Type     string `json:"type"`
+	Text     string `json:"text,omitempty"`
+	ImageURL string `json:"image_url,omitempty"`
+}
+
+type response struct {
+	Output []outputItem `json:"output"`
+	Usage  usage        `json:"usage"`
+}
+
+type outputItem struct {
+	Type    string          `json:"type"`
+	Role    string          `json:"role"`
+	Content []contentOutput `json:"content"`
+}
+
+type contentOutput struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+}
+
+type usage struct {
+	InputTokens         int                 `json:"input_tokens"`
+	OutputTokens        int                 `json:"output_tokens"`
+	TotalTokens         int                 `json:"total_tokens"`
+	InputTokensDetails  inputTokensDetails  `json:"input_tokens_details"`
+	OutputTokensDetails outputTokensDetails `json:"output_tokens_details"`
+}
+
+type inputTokensDetails struct {
+	CachedTokens int `json:"cached_tokens"`
+}
+
+type outputTokensDetails struct {
+	ReasoningTokens int `json:"reasoning_tokens"`
 }

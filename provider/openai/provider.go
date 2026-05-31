@@ -5,15 +5,19 @@ import (
 	"context"
 	"net/http"
 
+	openaisdk "github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/option"
+
 	"github.com/katasec/forge-core"
 )
 
 // Provider implements forge.Provider using the OpenAI Responses API.
 type Provider struct {
-	baseURL string
-	apiKey  string
-	model   string
-	client  *http.Client
+	baseURL   string
+	apiKey    string
+	model     string
+	client    *http.Client
+	sdkClient openaisdk.Client
 }
 
 // New creates an OpenAI provider using the Responses API.
@@ -27,6 +31,7 @@ func New(apiKey string, model Model, opts ...Option) *Provider {
 	for _, opt := range opts {
 		opt(p)
 	}
+	p.sdkClient = p.newSDKClient()
 	return p
 }
 
@@ -52,4 +57,12 @@ func (p *Provider) Generate(ctx context.Context, req forge.ProviderRequest) (*fo
 	}
 
 	return providerResponse(apiResp)
+}
+
+func (p *Provider) newSDKClient() openaisdk.Client {
+	return openaisdk.NewClient(
+		option.WithAPIKey(p.apiKey),
+		option.WithBaseURL(p.baseURL),
+		option.WithHTTPClient(p.client),
+	)
 }

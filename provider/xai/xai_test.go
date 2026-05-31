@@ -75,15 +75,14 @@ func TestGenerate(t *testing.T) {
 		if req.Model != string(ModelGrok3Mini) {
 			t.Errorf("model = %q", req.Model)
 		}
-		// Should have system + user message.
-		if len(req.Input) != 2 {
-			t.Fatalf("input items = %d, want 2", len(req.Input))
+		if req.Instructions != "Be helpful." {
+			t.Errorf("instructions = %q, want Be helpful.", req.Instructions)
 		}
-		if req.Input[0].Role != "system" {
-			t.Errorf("input[0].role = %q, want system", req.Input[0].Role)
+		if len(req.Input) != 1 {
+			t.Fatalf("input items = %d, want 1", len(req.Input))
 		}
-		if req.Input[1].Role != "user" {
-			t.Errorf("input[1].role = %q, want user", req.Input[1].Role)
+		if req.Input[0].Role != "user" {
+			t.Errorf("input[0].role = %q, want user", req.Input[0].Role)
 		}
 
 		resp := response{
@@ -160,6 +159,7 @@ func TestGenerateWithFunctionCalls(t *testing.T) {
 			}},
 			Usage: responseUsage{InputTokens: 15, OutputTokens: 8},
 		}
+		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(resp)
 	}))
 	defer srv.Close()
@@ -231,6 +231,7 @@ func TestGenerateWithToolResults(t *testing.T) {
 			}},
 			Usage: responseUsage{InputTokens: 20, OutputTokens: 10},
 		}
+		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(resp)
 	}))
 	defer srv.Close()
@@ -302,6 +303,7 @@ func TestGenerateWithWebSearch(t *testing.T) {
 			},
 			Usage: responseUsage{InputTokens: 50, OutputTokens: 30},
 		}
+		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(resp)
 	}))
 	defer srv.Close()
@@ -355,4 +357,19 @@ func TestGenerateAPIError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for 429 response")
 	}
+}
+
+type request struct {
+	Model        string        `json:"model"`
+	Input        []inputItem   `json:"input"`
+	Instructions string        `json:"instructions"`
+	Tools        []requestTool `json:"tools,omitempty"`
+}
+
+type inputItem struct {
+	Role    string `json:"role,omitempty"`
+	Content string `json:"content,omitempty"`
+	Type    string `json:"type,omitempty"`
+	CallID  string `json:"call_id,omitempty"`
+	Output  string `json:"output,omitempty"`
 }
