@@ -1,21 +1,26 @@
-package forge
+package sequential
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
 	"testing"
+
+	"github.com/katasec/forge-core/tool"
+	"github.com/katasec/forge-core/tool/registry"
 )
 
-func TestSequentialExecutorSuccess(t *testing.T) {
-	r := NewToolRegistry()
-	r.Register(Func[addInput]("add", "adds", func(_ context.Context, in addInput) (string, error) {
-		b, _ := json.Marshal(in.A + in.B)
-		return string(b), nil
-	}))
+type addInput struct {
+	A int `json:"a"`
+	B int `json:"b"`
+}
 
-	exec := &SequentialExecutor{Registry: r}
-	results := exec.Execute(context.Background(), []ToolCall{
+func TestExecutorSuccess(t *testing.T) {
+	r := registry.New()
+	r.Register(addTool())
+
+	exec := &Executor{Registry: r}
+	results := exec.Execute(context.Background(), []tool.Call{
 		{ID: "call-1", Name: "add", Arguments: json.RawMessage(`{"a": 1, "b": 2}`)},
 	})
 
@@ -33,11 +38,10 @@ func TestSequentialExecutorSuccess(t *testing.T) {
 	}
 }
 
-func TestSequentialExecutorMissingTool(t *testing.T) {
-	r := NewToolRegistry()
-	exec := &SequentialExecutor{Registry: r}
+func TestExecutorMissingTool(t *testing.T) {
+	exec := &Executor{Registry: registry.New()}
 
-	results := exec.Execute(context.Background(), []ToolCall{
+	results := exec.Execute(context.Background(), []tool.Call{
 		{ID: "call-1", Name: "nonexistent", Arguments: json.RawMessage(`{}`)},
 	})
 
@@ -52,14 +56,12 @@ func TestSequentialExecutorMissingTool(t *testing.T) {
 	}
 }
 
-func TestSequentialExecutorToolError(t *testing.T) {
-	r := NewToolRegistry()
-	r.Register(Func[addInput]("fail", "fails", func(_ context.Context, _ addInput) (string, error) {
-		return "", errors.New("something broke")
-	}))
+func TestExecutorToolError(t *testing.T) {
+	r := registry.New()
+	r.Register(failingTool())
 
-	exec := &SequentialExecutor{Registry: r}
-	results := exec.Execute(context.Background(), []ToolCall{
+	exec := &Executor{Registry: r}
+	results := exec.Execute(context.Background(), []tool.Call{
 		{ID: "call-1", Name: "fail", Arguments: json.RawMessage(`{"a":0,"b":0}`)},
 	})
 
@@ -74,15 +76,12 @@ func TestSequentialExecutorToolError(t *testing.T) {
 	}
 }
 
-func TestSequentialExecutorMultipleCalls(t *testing.T) {
-	r := NewToolRegistry()
-	r.Register(Func[addInput]("add", "adds", func(_ context.Context, in addInput) (string, error) {
-		b, _ := json.Marshal(in.A + in.B)
-		return string(b), nil
-	}))
+func TestExecutorMultipleCalls(t *testing.T) {
+	r := registry.New()
+	r.Register(addTool())
 
-	exec := &SequentialExecutor{Registry: r}
-	results := exec.Execute(context.Background(), []ToolCall{
+	exec := &Executor{Registry: r}
+	results := exec.Execute(context.Background(), []tool.Call{
 		{ID: "c1", Name: "add", Arguments: json.RawMessage(`{"a": 1, "b": 2}`)},
 		{ID: "c2", Name: "add", Arguments: json.RawMessage(`{"a": 10, "b": 20}`)},
 	})
@@ -96,4 +95,20 @@ func TestSequentialExecutorMultipleCalls(t *testing.T) {
 	if results[1].Content != "30" {
 		t.Errorf("results[1].Content = %q, want %q", results[1].Content, "30")
 	}
+}
+
+func addTool() tool.Tool {
+	return tool.Func[addInput]("add", "adds", func(_ context.Context, in addInput) (string, error) {
+		b, err := json.Marshal(in.A + in.B)
+		if err != nil {
+			return "", err
+		}
+		return string(b), nil
+	})
+}
+
+func failingTool() tool.Tool {
+	return tool.Func[addInput]("fail", "fails", func(_ context.Context, _ addInput) (string, error) {
+		return "", errors.New("something broke")
+	})
 }

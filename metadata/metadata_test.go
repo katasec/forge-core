@@ -1,4 +1,4 @@
-package forge
+package metadata
 
 import (
 	"context"
@@ -11,7 +11,7 @@ func TestWithMetadataAndFromContext(t *testing.T) {
 
 	ctx = WithMetadata(ctx, m)
 
-	got, ok := MetadataFromContext(ctx)
+	got, ok := FromContext(ctx)
 	if !ok {
 		t.Fatal("expected metadata in context")
 	}
@@ -20,10 +20,10 @@ func TestWithMetadataAndFromContext(t *testing.T) {
 	}
 }
 
-func TestMetadataFromContextMissing(t *testing.T) {
+func TestFromContextMissing(t *testing.T) {
 	ctx := context.Background()
 
-	_, ok := MetadataFromContext(ctx)
+	_, ok := FromContext(ctx)
 	if ok {
 		t.Fatal("expected no metadata in context")
 	}
@@ -35,7 +35,7 @@ func TestWithMetadataNilMap(t *testing.T) {
 
 	ctx = WithMetadata(ctx, m)
 
-	got, ok := MetadataFromContext(ctx)
+	got, ok := FromContext(ctx)
 	if !ok {
 		t.Fatal("expected metadata in context")
 	}
