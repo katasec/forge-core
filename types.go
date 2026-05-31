@@ -18,6 +18,7 @@ import (
 
 type AgentRequest = runtime.AgentRequest
 type AgentResponse = runtime.AgentResponse
+type Config = runtime.Config
 
 type ProviderRequest = provider.Request
 type ProviderResponse = provider.Response
