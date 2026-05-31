@@ -6,7 +6,7 @@ import (
 	"github.com/katasec/forge-core"
 )
 
-func (p *Provider) buildRequest(req forge.ProviderRequest) anthropicsdk.MessageNewParams {
+func (p *AnthropicProvider) buildRequest(req forge.ProviderRequest) anthropicsdk.MessageNewParams {
 	return anthropicsdk.MessageNewParams{
 		Model:     anthropicsdk.Model(p.model),
 		MaxTokens: 1024,

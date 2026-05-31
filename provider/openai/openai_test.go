@@ -10,8 +10,8 @@ import (
 	"github.com/katasec/forge-core"
 )
 
-// Compile-time check that *Provider satisfies forge.Provider.
-var _ forge.Provider = (*Provider)(nil)
+// Compile-time check that *OpenAIProvider satisfies forge.Provider.
+var _ forge.Provider = (*OpenAIProvider)(nil)
 
 func TestNew(t *testing.T) {
 	p := New("test-key", ModelGPT54Nano)

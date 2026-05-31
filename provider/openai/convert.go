@@ -11,7 +11,7 @@ import (
 	"github.com/katasec/forge-core"
 )
 
-func (p *Provider) buildRequest(req forge.ProviderRequest) (responses.ResponseNewParams, error) {
+func (p *OpenAIProvider) buildRequest(req forge.ProviderRequest) (responses.ResponseNewParams, error) {
 	input, err := convertMessages(req.Messages)
 	if err != nil {
 		return responses.ResponseNewParams{}, err

@@ -8,7 +8,7 @@ import (
 	"github.com/openai/openai-go/v3/responses"
 )
 
-func (p *Provider) sendRequest(ctx context.Context, req responses.ResponseNewParams, tools []requestTool) (*response, error) {
+func (p *XAIProvider) sendRequest(ctx context.Context, req responses.ResponseNewParams, tools []requestTool) (*response, error) {
 	opts := requestOptions(tools)
 	apiResp, err := p.sdk.Responses.New(ctx, req, opts...)
 	if err != nil {

@@ -11,8 +11,8 @@ import (
 	"github.com/katasec/forge-core"
 )
 
-// Provider implements forge.Provider using the Anthropic Messages API.
-type Provider struct {
+// AnthropicProvider implements forge.Provider using the Anthropic Messages API.
+type AnthropicProvider struct {
 	baseURL   string
 	apiKey    string
 	model     string
@@ -20,9 +20,14 @@ type Provider struct {
 	sdkClient anthropicsdk.Client
 }
 
+// Provider is kept as a compatibility alias. Prefer AnthropicProvider.
+//
+// Deprecated: use AnthropicProvider.
+type Provider = AnthropicProvider
+
 // New creates an Anthropic provider for the given API key and model.
-func New(apiKey, model string, opts ...Option) *Provider {
-	p := &Provider{
+func New(apiKey, model string, opts ...Option) *AnthropicProvider {
+	p := &AnthropicProvider{
 		baseURL: "https://api.anthropic.com",
 		apiKey:  apiKey,
 		model:   model,
@@ -36,7 +41,7 @@ func New(apiKey, model string, opts ...Option) *Provider {
 }
 
 // Capabilities describes the Anthropic provider features Forge currently supports.
-func (p *Provider) Capabilities() forge.Capabilities {
+func (p *AnthropicProvider) Capabilities() forge.Capabilities {
 	return forge.Capabilities{
 		Usage:      true,
 		Production: true,
@@ -44,7 +49,7 @@ func (p *Provider) Capabilities() forge.Capabilities {
 }
 
 // Generate sends a request to the Anthropic Messages API.
-func (p *Provider) Generate(ctx context.Context, req forge.ProviderRequest) (*forge.ProviderResponse, error) {
+func (p *AnthropicProvider) Generate(ctx context.Context, req forge.ProviderRequest) (*forge.ProviderResponse, error) {
 	apiReq := p.buildRequest(req)
 
 	apiResp, err := p.sendRequest(ctx, apiReq)
@@ -55,7 +60,7 @@ func (p *Provider) Generate(ctx context.Context, req forge.ProviderRequest) (*fo
 	return providerResponse(apiResp), nil
 }
 
-func (p *Provider) newSDKClient() anthropicsdk.Client {
+func (p *AnthropicProvider) newSDKClient() anthropicsdk.Client {
 	return anthropicsdk.NewClient(
 		option.WithAPIKey(p.apiKey),
 		option.WithBaseURL(p.baseURL),

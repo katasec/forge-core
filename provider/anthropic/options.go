@@ -2,12 +2,12 @@ package anthropic
 
 import "strings"
 
-// Option configures a Provider.
-type Option func(*Provider)
+// Option configures an AnthropicProvider.
+type Option func(*AnthropicProvider)
 
 // WithBaseURL overrides the Anthropic API base URL.
 func WithBaseURL(baseURL string) Option {
-	return func(p *Provider) {
+	return func(p *AnthropicProvider) {
 		p.baseURL = strings.TrimRight(baseURL, "/")
 	}
 }

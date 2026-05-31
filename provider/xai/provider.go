@@ -19,8 +19,8 @@ import (
 	"github.com/katasec/forge-core"
 )
 
-// Provider implements forge.Provider using the xAI Responses API.
-type Provider struct {
+// XAIProvider implements forge.Provider using the xAI Responses API.
+type XAIProvider struct {
 	baseURL string
 	apiKey  string
 	model   string
@@ -32,9 +32,14 @@ type Provider struct {
 	lastCitations []Citation
 }
 
+// Provider is kept as a compatibility alias. Prefer XAIProvider.
+//
+// Deprecated: use XAIProvider.
+type Provider = XAIProvider
+
 // New creates an xAI provider using the Responses API.
-func New(apiKey string, model Model, opts ...Option) *Provider {
-	p := &Provider{
+func New(apiKey string, model Model, opts ...Option) *XAIProvider {
+	p := &XAIProvider{
 		baseURL: "https://api.x.ai/v1",
 		apiKey:  apiKey,
 		model:   string(model),
@@ -48,7 +53,7 @@ func New(apiKey string, model Model, opts ...Option) *Provider {
 }
 
 // Capabilities describes the xAI provider features Forge currently supports.
-func (p *Provider) Capabilities() forge.Capabilities {
+func (p *XAIProvider) Capabilities() forge.Capabilities {
 	return forge.Capabilities{
 		Tools:      true,
 		Usage:      true,
@@ -57,14 +62,14 @@ func (p *Provider) Capabilities() forge.Capabilities {
 }
 
 // LastCitations returns the citations from the most recent Generate call.
-func (p *Provider) LastCitations() []Citation {
+func (p *XAIProvider) LastCitations() []Citation {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.lastCitations
 }
 
 // Generate sends a request to the xAI Responses API.
-func (p *Provider) Generate(ctx context.Context, req forge.ProviderRequest) (*forge.ProviderResponse, error) {
+func (p *XAIProvider) Generate(ctx context.Context, req forge.ProviderRequest) (*forge.ProviderResponse, error) {
 	apiReq, err := p.buildRequest(req)
 	if err != nil {
 		return nil, err
@@ -80,7 +85,7 @@ func (p *Provider) Generate(ctx context.Context, req forge.ProviderRequest) (*fo
 	return providerResp, nil
 }
 
-func (p *Provider) requestTools(defs []forge.ToolDefinition) []requestTool {
+func (p *XAIProvider) requestTools(defs []forge.ToolDefinition) []requestTool {
 	var tools []requestTool
 	tools = append(tools, p.tools...)
 	if len(defs) > 0 {
@@ -89,13 +94,13 @@ func (p *Provider) requestTools(defs []forge.ToolDefinition) []requestTool {
 	return tools
 }
 
-func (p *Provider) storeCitations(citations []Citation) {
+func (p *XAIProvider) storeCitations(citations []Citation) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.lastCitations = citations
 }
 
-func (p *Provider) newSDKClient() openaisdk.Client {
+func (p *XAIProvider) newSDKClient() openaisdk.Client {
 	return openaisdk.NewClient(
 		option.WithAPIKey(p.apiKey),
 		option.WithBaseURL(p.baseURL),

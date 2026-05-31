@@ -1,7 +1,7 @@
 package xai
 
-// Option configures a Provider.
-type Option func(*Provider)
+// Option configures an XAIProvider.
+type Option func(*XAIProvider)
 
 // WebSearchOption configures the web_search tool.
 type WebSearchOption func(*webSearchConfig)
@@ -11,12 +11,12 @@ type XSearchOption func(*xSearchConfig)
 
 // WithBaseURL overrides the API base URL (useful for testing).
 func WithBaseURL(url string) Option {
-	return func(p *Provider) { p.baseURL = url }
+	return func(p *XAIProvider) { p.baseURL = url }
 }
 
 // WithWebSearch enables the built-in web search tool.
 func WithWebSearch(opts ...WebSearchOption) Option {
-	return func(p *Provider) {
+	return func(p *XAIProvider) {
 		cfg := &webSearchConfig{}
 		for _, o := range opts {
 			o(cfg)
@@ -27,7 +27,7 @@ func WithWebSearch(opts ...WebSearchOption) Option {
 
 // WithXSearch enables the built-in X/Twitter search tool.
 func WithXSearch(opts ...XSearchOption) Option {
-	return func(p *Provider) {
+	return func(p *XAIProvider) {
 		cfg := &xSearchConfig{}
 		for _, o := range opts {
 			o(cfg)

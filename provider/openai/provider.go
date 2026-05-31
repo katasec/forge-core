@@ -11,8 +11,8 @@ import (
 	"github.com/katasec/forge-core"
 )
 
-// Provider implements forge.Provider using the OpenAI Responses API.
-type Provider struct {
+// OpenAIProvider implements forge.Provider using the OpenAI Responses API.
+type OpenAIProvider struct {
 	baseURL   string
 	apiKey    string
 	model     string
@@ -20,9 +20,14 @@ type Provider struct {
 	sdkClient openaisdk.Client
 }
 
+// Provider is kept as a compatibility alias. Prefer OpenAIProvider.
+//
+// Deprecated: use OpenAIProvider.
+type Provider = OpenAIProvider
+
 // New creates an OpenAI provider using the Responses API.
-func New(apiKey string, model Model, opts ...Option) *Provider {
-	p := &Provider{
+func New(apiKey string, model Model, opts ...Option) *OpenAIProvider {
+	p := &OpenAIProvider{
 		baseURL: "https://api.openai.com/v1",
 		apiKey:  apiKey,
 		model:   string(model),
@@ -36,7 +41,7 @@ func New(apiKey string, model Model, opts ...Option) *Provider {
 }
 
 // Capabilities describes the OpenAI provider features Forge currently supports.
-func (p *Provider) Capabilities() forge.Capabilities {
+func (p *OpenAIProvider) Capabilities() forge.Capabilities {
 	return forge.Capabilities{
 		Images:     true,
 		Usage:      true,
@@ -45,7 +50,7 @@ func (p *Provider) Capabilities() forge.Capabilities {
 }
 
 // Generate sends a request to the OpenAI Responses API.
-func (p *Provider) Generate(ctx context.Context, req forge.ProviderRequest) (*forge.ProviderResponse, error) {
+func (p *OpenAIProvider) Generate(ctx context.Context, req forge.ProviderRequest) (*forge.ProviderResponse, error) {
 	apiReq, err := p.buildRequest(req)
 	if err != nil {
 		return nil, err
@@ -59,7 +64,7 @@ func (p *Provider) Generate(ctx context.Context, req forge.ProviderRequest) (*fo
 	return providerResponse(apiResp)
 }
 
-func (p *Provider) newSDKClient() openaisdk.Client {
+func (p *OpenAIProvider) newSDKClient() openaisdk.Client {
 	return openaisdk.NewClient(
 		option.WithAPIKey(p.apiKey),
 		option.WithBaseURL(p.baseURL),

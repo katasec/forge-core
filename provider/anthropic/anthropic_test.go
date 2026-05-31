@@ -10,8 +10,8 @@ import (
 	"github.com/katasec/forge-core"
 )
 
-// Compile-time check that *Provider satisfies forge.Provider.
-var _ forge.Provider = (*Provider)(nil)
+// Compile-time check that *AnthropicProvider satisfies forge.Provider.
+var _ forge.Provider = (*AnthropicProvider)(nil)
 
 func TestNew(t *testing.T) {
 	p := New("test-key", "claude-sonnet-4-20250514")
