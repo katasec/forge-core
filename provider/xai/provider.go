@@ -84,7 +84,7 @@ func (p *XAIProvider) requestTools(defs []forge.ToolDefinition) []requestTool {
 	var tools []requestTool
 	tools = append(tools, p.tools...)
 	if len(defs) > 0 {
-		tools = append(tools, convertTools(defs)...)
+		tools = append(tools, toXAITools(defs)...)
 	}
 	return tools
 }

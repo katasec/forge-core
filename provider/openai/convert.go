@@ -12,7 +12,7 @@ import (
 )
 
 func (p *OpenAIProvider) buildRequest(req forge.ProviderRequest) (responses.ResponseNewParams, error) {
-	input, err := convertMessages(req.Messages)
+	input, err := toOpenAIMessages(req.Messages)
 	if err != nil {
 		return responses.ResponseNewParams{}, err
 	}
@@ -44,14 +44,14 @@ func providerResponse(apiResp *responses.Response) (*forge.ProviderResponse, err
 	}, nil
 }
 
-func convertMessages(messages []forge.Message) (responses.ResponseInputParam, error) {
+func toOpenAIMessages(messages []forge.Message) (responses.ResponseInputParam, error) {
 	items := make(responses.ResponseInputParam, 0, len(messages))
 	for _, msg := range messages {
 		if msg.Role == forge.RoleSystem {
 			continue
 		}
 
-		item, err := convertMessage(msg)
+		item, err := toOpenAIMessage(msg)
 		if err != nil {
 			return nil, err
 		}
@@ -60,18 +60,18 @@ func convertMessages(messages []forge.Message) (responses.ResponseInputParam, er
 	return items, nil
 }
 
-func convertMessage(msg forge.Message) (responses.ResponseInputItemUnionParam, error) {
-	content, err := convertContent(msg.Role, msg.Content)
+func toOpenAIMessage(msg forge.Message) (responses.ResponseInputItemUnionParam, error) {
+	content, err := toOpenAIContent(msg.Role, msg.Content)
 	if err != nil {
 		return responses.ResponseInputItemUnionParam{}, err
 	}
 	return responses.ResponseInputItemParamOfMessage(content, responses.EasyInputMessageRole(msg.Role)), nil
 }
 
-func convertContent(role forge.Role, blocks []forge.ContentBlock) (responses.ResponseInputMessageContentListParam, error) {
+func toOpenAIContent(role forge.Role, blocks []forge.ContentBlock) (responses.ResponseInputMessageContentListParam, error) {
 	content := make(responses.ResponseInputMessageContentListParam, 0, len(blocks))
 	for _, block := range blocks {
-		converted, err := convertContentBlock(role, block)
+		converted, err := toOpenAIContentBlock(role, block)
 		if err != nil {
 			return nil, err
 		}
@@ -80,12 +80,12 @@ func convertContent(role forge.Role, blocks []forge.ContentBlock) (responses.Res
 	return content, nil
 }
 
-func convertContentBlock(role forge.Role, block forge.ContentBlock) (responses.ResponseInputContentUnionParam, error) {
+func toOpenAIContentBlock(role forge.Role, block forge.ContentBlock) (responses.ResponseInputContentUnionParam, error) {
 	switch block.Type {
 	case forge.ContentTypeText:
-		return textContent(role, block.Text), nil
+		return toOpenAITextContent(role, block.Text), nil
 	case forge.ContentTypeImage:
-		return imageContent(role, block)
+		return toOpenAIImageContent(role, block)
 	case forge.ContentTypeToolCall, forge.ContentTypeToolResult:
 		return responses.ResponseInputContentUnionParam{}, fmt.Errorf("openai provider does not support tool content yet")
 	default:
@@ -93,11 +93,11 @@ func convertContentBlock(role forge.Role, block forge.ContentBlock) (responses.R
 	}
 }
 
-func textContent(_ forge.Role, text string) responses.ResponseInputContentUnionParam {
+func toOpenAITextContent(_ forge.Role, text string) responses.ResponseInputContentUnionParam {
 	return responses.ResponseInputContentParamOfInputText(text)
 }
 
-func imageContent(role forge.Role, block forge.ContentBlock) (responses.ResponseInputContentUnionParam, error) {
+func toOpenAIImageContent(role forge.Role, block forge.ContentBlock) (responses.ResponseInputContentUnionParam, error) {
 	if role != forge.RoleUser {
 		return responses.ResponseInputContentUnionParam{}, fmt.Errorf("openai image content is only supported for user messages")
 	}

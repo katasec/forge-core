@@ -12,7 +12,7 @@ import (
 )
 
 func (p *XAIProvider) buildRequest(req forge.ProviderRequest) (responses.ResponseNewParams, error) {
-	input, err := convertMessages(req.Messages)
+	input, err := toXAIMessages(req.Messages)
 	if err != nil {
 		return responses.ResponseNewParams{}, err
 	}
@@ -29,14 +29,14 @@ func (p *XAIProvider) buildRequest(req forge.ProviderRequest) (responses.Respons
 	return apiReq, nil
 }
 
-func convertMessages(msgs []forge.Message) (responses.ResponseInputParam, error) {
+func toXAIMessages(msgs []forge.Message) (responses.ResponseInputParam, error) {
 	var items responses.ResponseInputParam
 
 	for _, m := range msgs {
 		if m.Role == forge.RoleSystem {
 			continue
 		}
-		converted, err := convertMessage(m)
+		converted, err := toXAIMessage(m)
 		if err != nil {
 			return nil, err
 		}
@@ -45,9 +45,9 @@ func convertMessages(msgs []forge.Message) (responses.ResponseInputParam, error)
 	return items, nil
 }
 
-func convertMessage(m forge.Message) ([]responses.ResponseInputItemUnionParam, error) {
+func toXAIMessage(m forge.Message) ([]responses.ResponseInputItemUnionParam, error) {
 	if m.Role == forge.RoleTool && len(m.ToolResults()) > 0 {
-		return convertToolResults(m.ToolResults()), nil
+		return toXAIToolResults(m.ToolResults()), nil
 	}
 	if len(m.ToolCalls()) > 0 {
 		return nil, nil
@@ -58,7 +58,7 @@ func convertMessage(m forge.Message) ([]responses.ResponseInputItemUnionParam, e
 	return []responses.ResponseInputItemUnionParam{item}, nil
 }
 
-func convertToolResults(results []forge.ToolResult) []responses.ResponseInputItemUnionParam {
+func toXAIToolResults(results []forge.ToolResult) []responses.ResponseInputItemUnionParam {
 	items := make([]responses.ResponseInputItemUnionParam, 0, len(results))
 	for _, tr := range results {
 		items = append(items, responses.ResponseInputItemParamOfFunctionCallOutput(tr.CallID, tr.Content))
@@ -66,7 +66,7 @@ func convertToolResults(results []forge.ToolResult) []responses.ResponseInputIte
 	return items
 }
 
-func convertTools(defs []forge.ToolDefinition) []requestTool {
+func toXAITools(defs []forge.ToolDefinition) []requestTool {
 	tools := make([]requestTool, 0, len(defs))
 	for _, d := range defs {
 		tools = append(tools, requestTool{
@@ -80,7 +80,7 @@ func convertTools(defs []forge.ToolDefinition) []requestTool {
 }
 
 func providerResponse(resp *response) (*forge.ProviderResponse, []Citation) {
-	content, toolCalls, citations := convertOutput(resp.Output)
+	content, toolCalls, citations := fromXAIOutput(resp.Output)
 
 	blocks := []forge.ContentBlock{}
 	if content != "" {
@@ -100,7 +100,7 @@ func providerResponse(resp *response) (*forge.ProviderResponse, []Citation) {
 	}, citations
 }
 
-func convertOutput(output []outputItem) (string, []forge.ToolCall, []Citation) {
+func fromXAIOutput(output []outputItem) (string, []forge.ToolCall, []Citation) {
 	var content string
 	var toolCalls []forge.ToolCall
 	var citations []Citation
@@ -114,7 +114,7 @@ func convertOutput(output []outputItem) (string, []forge.ToolCall, []Citation) {
 				Arguments: json.RawMessage(item.Arguments),
 			})
 		case "message":
-			text, found := convertMessageOutput(item.Content)
+			text, found := fromXAIMessageOutput(item.Content)
 			content += text
 			citations = append(citations, found...)
 		}
@@ -123,7 +123,7 @@ func convertOutput(output []outputItem) (string, []forge.ToolCall, []Citation) {
 	return content, toolCalls, citations
 }
 
-func convertMessageOutput(content []contentItem) (string, []Citation) {
+func fromXAIMessageOutput(content []contentItem) (string, []Citation) {
 	var text string
 	var citations []Citation
 	for _, c := range content {
@@ -131,12 +131,12 @@ func convertMessageOutput(content []contentItem) (string, []Citation) {
 			continue
 		}
 		text += c.Text
-		citations = append(citations, convertAnnotations(c.Annotations)...)
+		citations = append(citations, fromXAIAnnotations(c.Annotations)...)
 	}
 	return text, citations
 }
 
-func convertAnnotations(annotations []annotation) []Citation {
+func fromXAIAnnotations(annotations []annotation) []Citation {
 	var citations []Citation
 	for _, a := range annotations {
 		if a.Type == "url_citation" {

@@ -11,7 +11,7 @@ func (p *AnthropicProvider) buildRequest(req forge.ProviderRequest) anthropicsdk
 		Model:     anthropicsdk.Model(p.model),
 		MaxTokens: 1024,
 		System:    systemPrompt(req.SystemPrompt),
-		Messages:  convertMessages(req.Messages),
+		Messages:  toAnthropicMessages(req.Messages),
 	}
 }
 
@@ -22,18 +22,18 @@ func systemPrompt(prompt string) []anthropicsdk.TextBlockParam {
 	return []anthropicsdk.TextBlockParam{{Text: prompt}}
 }
 
-func convertMessages(messages []forge.Message) []anthropicsdk.MessageParam {
+func toAnthropicMessages(messages []forge.Message) []anthropicsdk.MessageParam {
 	out := make([]anthropicsdk.MessageParam, 0, len(messages))
 	for _, m := range messages {
 		if m.Role == forge.RoleSystem {
 			continue
 		}
-		out = append(out, convertMessage(m))
+		out = append(out, toAnthropicMessage(m))
 	}
 	return out
 }
 
-func convertMessage(message forge.Message) anthropicsdk.MessageParam {
+func toAnthropicMessage(message forge.Message) anthropicsdk.MessageParam {
 	if message.Role == forge.RoleAssistant {
 		return anthropicsdk.NewAssistantMessage(anthropicsdk.NewTextBlock(message.Text()))
 	}
@@ -42,7 +42,7 @@ func convertMessage(message forge.Message) anthropicsdk.MessageParam {
 
 func providerResponse(apiResp *anthropicsdk.Message) *forge.ProviderResponse {
 	return &forge.ProviderResponse{
-		Messages:     []forge.Message{forge.AssistantText(textContent(apiResp.Content))},
+		Messages:     []forge.Message{forge.AssistantText(textFromAnthropic(apiResp.Content))},
 		FinishReason: finishReason(apiResp.StopReason),
 		Usage: forge.TokenUsage{
 			InputTokens:  int(apiResp.Usage.InputTokens),
@@ -51,7 +51,7 @@ func providerResponse(apiResp *anthropicsdk.Message) *forge.ProviderResponse {
 	}
 }
 
-func textContent(content []anthropicsdk.ContentBlockUnion) string {
+func textFromAnthropic(content []anthropicsdk.ContentBlockUnion) string {
 	for _, c := range content {
 		if c.Type == "text" {
 			return c.Text
