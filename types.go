@@ -1,12 +1,44 @@
 package forge
 
 import (
+	"context"
+
+	"github.com/katasec/forge-core/executor"
+	"github.com/katasec/forge-core/executor/sequential"
+	"github.com/katasec/forge-core/internal/runtime"
+	"github.com/katasec/forge-core/memory"
+	"github.com/katasec/forge-core/memory/inmem"
 	"github.com/katasec/forge-core/message"
+	"github.com/katasec/forge-core/metadata"
+	"github.com/katasec/forge-core/middleware"
 	"github.com/katasec/forge-core/provider"
 	"github.com/katasec/forge-core/tool"
+	"github.com/katasec/forge-core/tool/registry"
 )
 
+type AgentRequest = runtime.AgentRequest
+type AgentResponse = runtime.AgentResponse
+
+type ProviderRequest = provider.Request
+type ProviderResponse = provider.Response
+type Provider = provider.Provider
+type Capabilities = provider.Capabilities
+type CapabilityProvider = provider.CapabilityProvider
+type TokenUsage = provider.TokenUsage
+type FinishReason = provider.FinishReason
+
+const (
+	FinishReasonStop      = provider.FinishReasonStop
+	FinishReasonToolUse   = provider.FinishReasonToolUse
+	FinishReasonIterLimit = provider.FinishReasonIterLimit
+	FinishReasonError     = provider.FinishReasonError
+)
+
+type Message = message.Message
 type Role = message.Role
+type ContentBlock = message.ContentBlock
+type ContentType = message.ContentType
+type ImageContent = message.ImageContent
 
 const (
 	RoleUser      = message.RoleUser
@@ -15,16 +47,36 @@ const (
 	RoleSystem    = message.RoleSystem
 )
 
-type Message = message.Message
-type ContentBlock = message.ContentBlock
-type ContentType = message.ContentType
-type ImageContent = message.ImageContent
-
 const (
 	ContentTypeText       = message.ContentTypeText
 	ContentTypeImage      = message.ContentTypeImage
 	ContentTypeToolCall   = message.ContentTypeToolCall
 	ContentTypeToolResult = message.ContentTypeToolResult
+)
+
+type Tool = tool.Tool
+type ToolSchema = tool.Schema
+type ToolDefinition = tool.Definition
+type ToolCall = tool.Call
+type ToolResult = tool.Result
+type ToolError = tool.Error
+type ToolRegistry = registry.Registry
+type ToolExecutor = executor.Executor
+type SequentialExecutor = sequential.Executor
+
+type MemoryStore = memory.Store
+type InMemoryStore = inmem.Store
+
+type RunFunc = middleware.RunFunc
+type Middleware = middleware.Middleware
+
+type Metadata = metadata.Metadata
+
+type ErrorPolicy = runtime.ErrorPolicy
+
+const (
+	ErrorPolicyStop     = runtime.ErrorPolicyStop
+	ErrorPolicyContinue = runtime.ErrorPolicyContinue
 )
 
 func Text(content string) ContentBlock {
@@ -59,26 +111,22 @@ func AssistantText(content string) Message {
 	return message.AssistantText(content)
 }
 
-type ToolCall = tool.Call
-type ToolResult = tool.Result
-type ToolError = tool.Error
+func Func[T any](name, description string, fn func(ctx context.Context, input T) (string, error)) Tool {
+	return tool.Func(name, description, fn)
+}
 
-type FinishReason = provider.FinishReason
+func NewToolRegistry() *ToolRegistry {
+	return registry.New()
+}
 
-const (
-	FinishReasonStop      = provider.FinishReasonStop
-	FinishReasonToolUse   = provider.FinishReasonToolUse
-	FinishReasonIterLimit = provider.FinishReasonIterLimit
-	FinishReasonError     = provider.FinishReasonError
-)
+func NewInMemoryStore() *InMemoryStore {
+	return inmem.New()
+}
 
-type TokenUsage = provider.TokenUsage
-type Capabilities = provider.Capabilities
-type CapabilityProvider = provider.CapabilityProvider
+func WithMetadata(ctx context.Context, m Metadata) context.Context {
+	return metadata.WithMetadata(ctx, m)
+}
 
-type ErrorPolicy string
-
-const (
-	ErrorPolicyStop     ErrorPolicy = "stop"
-	ErrorPolicyContinue ErrorPolicy = "continue"
-)
+func MetadataFromContext(ctx context.Context) (Metadata, bool) {
+	return metadata.FromContext(ctx)
+}

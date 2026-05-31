@@ -60,42 +60,96 @@ func TestNewAgentNilProvider(t *testing.T) {
 }
 
 func TestNewAgentDefaultErrorPolicy(t *testing.T) {
+	provider := &mockProvider{
+		responses: []*ProviderResponse{
+			{
+				Messages: []Message{{Role: RoleAssistant, Content: []ContentBlock{
+					ToolCallBlock(ToolCall{ID: "c1", Name: "broken", Arguments: json.RawMessage(`{}`)}),
+				}}},
+				FinishReason: FinishReasonToolUse,
+			},
+		},
+	}
+
 	agent, err := NewAgent(Config{
-		Provider: &mockProvider{},
+		Provider: provider,
+		Tools: []Tool{
+			Func[struct{}]("broken", "always fails", func(_ context.Context, _ struct{}) (string, error) {
+				return "", errors.New("tool broke")
+			}),
+		},
 	})
 	if err != nil {
 		t.Fatalf("NewAgent error: %v", err)
 	}
-	if agent.errorPolicy != ErrorPolicyStop {
-		t.Errorf("errorPolicy = %q, want %q", agent.errorPolicy, ErrorPolicyStop)
+
+	resp, err := agent.Ask(context.Background(), "go")
+	if err != nil {
+		t.Fatalf("Ask error: %v", err)
+	}
+	if resp.FinishReason != FinishReasonError {
+		t.Fatalf("FinishReason = %q, want %q", resp.FinishReason, FinishReasonError)
 	}
 }
 
 func TestNewAgentDefaultsToInMemoryStore(t *testing.T) {
+	provider := &recordingProvider{
+		responses: []*ProviderResponse{
+			{Messages: []Message{AssistantText("first")}, FinishReason: FinishReasonStop},
+			{Messages: []Message{AssistantText("second")}, FinishReason: FinishReasonStop},
+		},
+	}
+
 	agent, err := NewAgent(Config{
-		Provider: &mockProvider{},
+		Provider: provider,
 	})
 	if err != nil {
 		t.Fatalf("NewAgent error: %v", err)
 	}
-	if agent.memory == nil {
-		t.Fatal("expected default memory store")
+
+	if _, err := agent.Ask(context.Background(), "remember me"); err != nil {
+		t.Fatalf("first Ask error: %v", err)
 	}
-	if _, ok := agent.memory.(*InMemoryStore); !ok {
-		t.Fatalf("memory = %T, want *InMemoryStore", agent.memory)
+	if _, err := agent.Ask(context.Background(), "what did I say?"); err != nil {
+		t.Fatalf("second Ask error: %v", err)
+	}
+
+	if len(provider.requests) != 2 {
+		t.Fatalf("provider requests = %d, want 2", len(provider.requests))
+	}
+	if len(provider.requests[1].Messages) != 3 {
+		t.Fatalf("second request messages = %d, want default memory history", len(provider.requests[1].Messages))
 	}
 }
 
 func TestNewAgentDisableMemory(t *testing.T) {
+	provider := &recordingProvider{
+		responses: []*ProviderResponse{
+			{Messages: []Message{AssistantText("first")}, FinishReason: FinishReasonStop},
+			{Messages: []Message{AssistantText("second")}, FinishReason: FinishReasonStop},
+		},
+	}
+
 	agent, err := NewAgent(Config{
-		Provider:      &mockProvider{},
+		Provider:      provider,
 		DisableMemory: true,
 	})
 	if err != nil {
 		t.Fatalf("NewAgent error: %v", err)
 	}
-	if agent.memory != nil {
-		t.Fatalf("memory = %T, want nil", agent.memory)
+
+	if _, err := agent.Ask(context.Background(), "remember me"); err != nil {
+		t.Fatalf("first Ask error: %v", err)
+	}
+	if _, err := agent.Ask(context.Background(), "what did I say?"); err != nil {
+		t.Fatalf("second Ask error: %v", err)
+	}
+
+	if len(provider.requests) != 2 {
+		t.Fatalf("provider requests = %d, want 2", len(provider.requests))
+	}
+	if len(provider.requests[1].Messages) != 1 {
+		t.Fatalf("second request messages = %d, want no saved history", len(provider.requests[1].Messages))
 	}
 }
 
@@ -108,8 +162,16 @@ func TestNewAgentAcceptsExplicitMemoryStore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewAgent error: %v", err)
 	}
-	if agent.memory != store {
-		t.Fatalf("memory = %T, want explicit store", agent.memory)
+	if _, err := agent.AskIn(context.Background(), "explicit", "hello"); err != nil {
+		t.Fatalf("AskIn error: %v", err)
+	}
+
+	saved, err := store.Load(context.Background(), "explicit")
+	if err != nil {
+		t.Fatalf("Load error: %v", err)
+	}
+	if len(saved) != 2 {
+		t.Fatalf("saved messages = %d, want explicit store history", len(saved))
 	}
 }
 
