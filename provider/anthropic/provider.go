@@ -20,11 +20,6 @@ type AnthropicProvider struct {
 	sdkClient anthropicsdk.Client
 }
 
-// Provider is kept as a compatibility alias. Prefer AnthropicProvider.
-//
-// Deprecated: use AnthropicProvider.
-type Provider = AnthropicProvider
-
 // New creates an Anthropic provider for the given API key and model.
 func New(apiKey, model string, opts ...Option) *AnthropicProvider {
 	p := &AnthropicProvider{

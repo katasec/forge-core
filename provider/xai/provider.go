@@ -32,11 +32,6 @@ type XAIProvider struct {
 	lastCitations []Citation
 }
 
-// Provider is kept as a compatibility alias. Prefer XAIProvider.
-//
-// Deprecated: use XAIProvider.
-type Provider = XAIProvider
-
 // New creates an xAI provider using the Responses API.
 func New(apiKey string, model Model, opts ...Option) *XAIProvider {
 	p := &XAIProvider{

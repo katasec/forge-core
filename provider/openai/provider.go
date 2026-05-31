@@ -20,11 +20,6 @@ type OpenAIProvider struct {
 	sdkClient openaisdk.Client
 }
 
-// Provider is kept as a compatibility alias. Prefer OpenAIProvider.
-//
-// Deprecated: use OpenAIProvider.
-type Provider = OpenAIProvider
-
 // New creates an OpenAI provider using the Responses API.
 func New(apiKey string, model Model, opts ...Option) *OpenAIProvider {
 	p := &OpenAIProvider{
