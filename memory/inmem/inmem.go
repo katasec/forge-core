@@ -80,6 +80,13 @@ func cloneContentBlocks(blocks []message.ContentBlock) []message.ContentBlock {
 			result := *block.ToolResult
 			cp[i].ToolResult = &result
 		}
+		if block.Metadata != nil {
+			metadata := make(map[string]any, len(block.Metadata))
+			for k, v := range block.Metadata {
+				metadata[k] = v
+			}
+			cp[i].Metadata = metadata
+		}
 	}
 	return cp
 }
