@@ -90,7 +90,7 @@ func providerResponse(resp *response) (*forge.ProviderResponse, []Citation) {
 
 	blocks := []forge.ContentBlock{}
 	if content != "" {
-		blocks = append(blocks, forge.Text(content))
+		blocks = append(blocks, message.Text(content))
 	}
 	for _, call := range toolCalls {
 		blocks = append(blocks, message.ToolCall(call))

@@ -4,6 +4,7 @@ import (
 	anthropicsdk "github.com/anthropics/anthropic-sdk-go"
 
 	"github.com/katasec/forge-core"
+	"github.com/katasec/forge-core/message"
 )
 
 // buildRequest adapts a Forge provider request into Anthropic Messages parameters.
@@ -37,17 +38,17 @@ func toAnthropicMessages(messages []forge.Message) []anthropicsdk.MessageParam {
 }
 
 // toAnthropicMessage converts one Forge message into an Anthropic message param.
-func toAnthropicMessage(message forge.Message) anthropicsdk.MessageParam {
-	if message.Role == forge.RoleAssistant {
-		return anthropicsdk.NewAssistantMessage(anthropicsdk.NewTextBlock(message.Text()))
+func toAnthropicMessage(msg forge.Message) anthropicsdk.MessageParam {
+	if msg.Role == forge.RoleAssistant {
+		return anthropicsdk.NewAssistantMessage(anthropicsdk.NewTextBlock(msg.Text()))
 	}
-	return anthropicsdk.NewUserMessage(anthropicsdk.NewTextBlock(message.Text()))
+	return anthropicsdk.NewUserMessage(anthropicsdk.NewTextBlock(msg.Text()))
 }
 
 // providerResponse adapts an Anthropic message response into Forge's provider response.
 func providerResponse(apiResp *anthropicsdk.Message) *forge.ProviderResponse {
 	return &forge.ProviderResponse{
-		Messages:     []forge.Message{forge.AssistantText(textFromAnthropic(apiResp.Content))},
+		Messages:     []forge.Message{message.AssistantText(textFromAnthropic(apiResp.Content))},
 		FinishReason: finishReason(apiResp.StopReason),
 		Usage: forge.TokenUsage{
 			InputTokens:  int(apiResp.Usage.InputTokens),

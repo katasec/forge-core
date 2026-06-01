@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/katasec/forge-core"
+	"github.com/katasec/forge-core/message"
 )
 
 // Compile-time check that *XAIProvider satisfies forge.Provider.
@@ -106,7 +107,7 @@ func TestGenerate(t *testing.T) {
 	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
 		SystemPrompt: "Be helpful.",
 		Messages: []forge.Message{
-			forge.UserText("Hi"),
+			message.UserText("Hi"),
 		},
 	})
 	if err != nil {
@@ -166,7 +167,7 @@ func TestGenerateWithFunctionCalls(t *testing.T) {
 
 	p := New("key", ModelGrok3Mini, WithBaseURL(srv.URL))
 	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{forge.UserText("Weather in SF?")},
+		Messages: []forge.Message{message.UserText("Weather in SF?")},
 		Tools: []forge.ToolDefinition{{
 			Name:        "get_weather",
 			Description: "Get weather",
@@ -239,12 +240,12 @@ func TestGenerateWithToolResults(t *testing.T) {
 	p := New("key", ModelGrok3Mini, WithBaseURL(srv.URL))
 	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
 		Messages: []forge.Message{
-			forge.UserText("Weather in SF?"),
+			message.UserText("Weather in SF?"),
 			{Role: forge.RoleAssistant, Content: []forge.ContentBlock{
-				forge.ToolCallBlock(forge.ToolCall{ID: "call-1", Name: "get_weather", Arguments: json.RawMessage(`{"city":"SF"}`)}),
+				message.ToolCall(forge.ToolCall{ID: "call-1", Name: "get_weather", Arguments: json.RawMessage(`{"city":"SF"}`)}),
 			}},
 			{Role: forge.RoleTool, Content: []forge.ContentBlock{
-				forge.ToolResultBlock(forge.ToolResult{CallID: "call-1", Content: "72°F"}),
+				message.ToolResult(forge.ToolResult{CallID: "call-1", Content: "72°F"}),
 			}},
 		},
 	})
@@ -313,7 +314,7 @@ func TestGenerateWithWebSearch(t *testing.T) {
 		WithWebSearch(AllowedDomains("reuters.com")),
 	)
 	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{forge.UserText("Latest xAI news?")},
+		Messages: []forge.Message{message.UserText("Latest xAI news?")},
 	})
 	if err != nil {
 		t.Fatalf("Generate: %v", err)
@@ -352,7 +353,7 @@ func TestGenerateAPIError(t *testing.T) {
 
 	p := New("key", ModelGrok3Mini, WithBaseURL(srv.URL))
 	_, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{forge.UserText("Hi")},
+		Messages: []forge.Message{message.UserText("Hi")},
 	})
 	if err == nil {
 		t.Fatal("expected error for 429 response")

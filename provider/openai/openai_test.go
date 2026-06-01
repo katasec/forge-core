@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/katasec/forge-core"
+	"github.com/katasec/forge-core/message"
 )
 
 // Compile-time check that *OpenAIProvider satisfies forge.Provider.
@@ -89,7 +90,7 @@ func TestGenerate(t *testing.T) {
 	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
 		SystemPrompt: "You are helpful.",
 		Messages: []forge.Message{
-			forge.UserText("Hi"),
+			message.UserText("Hi"),
 		},
 	})
 	if err != nil {
@@ -141,9 +142,9 @@ func TestGenerateWithImageURL(t *testing.T) {
 	p := New("test-key", ModelGPT54Nano, WithBaseURL(srv.URL))
 	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
 		Messages: []forge.Message{
-			forge.UserMessage(
-				forge.Text("Describe this image."),
-				forge.ImageURL("https://example.com/cat.png"),
+			message.UserMessage(
+				message.Text("Describe this image."),
+				message.ImageURL("https://example.com/cat.png"),
 			),
 		},
 	})
@@ -166,7 +167,7 @@ func TestGenerateNoMessages(t *testing.T) {
 	p := New("test-key", ModelGPT54Nano, WithBaseURL(srv.URL))
 
 	_, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{forge.UserText("Hi")},
+		Messages: []forge.Message{message.UserText("Hi")},
 	})
 	if err == nil {
 		t.Fatal("expected error for empty output")
@@ -183,7 +184,7 @@ func TestGenerateAPIError(t *testing.T) {
 	p := New("test-key", ModelGPT54Nano, WithBaseURL(srv.URL))
 
 	_, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{forge.UserText("Hi")},
+		Messages: []forge.Message{message.UserText("Hi")},
 	})
 	if err == nil {
 		t.Fatal("expected error for 429 response")

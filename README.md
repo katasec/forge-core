@@ -7,7 +7,7 @@ Forge Core handles the **LLM call -> tool execution -> response** cycle. You sup
 ## Install
 
 ```bash
-go get github.com/katasec/forge-core@v0.3.0
+go get github.com/katasec/forge-core@v0.4.0
 ```
 
 ## Quick Start
@@ -160,9 +160,11 @@ fmt.Println(resp.LastText())
 For multimodal input, use `AskContent`:
 
 ```go
+import "github.com/katasec/forge-core/message"
+
 resp, err := agent.AskContent(ctx,
-    forge.Text("Describe this image."),
-    forge.ImageURL("https://example.com/cat.png"),
+    message.Text("Describe this image."),
+    message.ImageURL("https://example.com/cat.png"),
 )
 fmt.Println(resp.LastText())
 ```

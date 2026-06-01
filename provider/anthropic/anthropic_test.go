@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/katasec/forge-core"
+	"github.com/katasec/forge-core/message"
 )
 
 // Compile-time check that *AnthropicProvider satisfies forge.Provider.
@@ -69,7 +70,7 @@ func TestGenerate(t *testing.T) {
 	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
 		SystemPrompt: "You are helpful.",
 		Messages: []forge.Message{
-			forge.UserText("Hi"),
+			message.UserText("Hi"),
 		},
 	})
 	if err != nil {
@@ -100,7 +101,7 @@ func TestGenerateAPIError(t *testing.T) {
 	p := New("bad-key", "claude-sonnet-4-20250514", WithBaseURL(srv.URL))
 
 	_, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{forge.UserText("Hi")},
+		Messages: []forge.Message{message.UserText("Hi")},
 	})
 	if err == nil {
 		t.Fatal("expected error for 401 response")

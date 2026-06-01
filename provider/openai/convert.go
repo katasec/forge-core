@@ -9,6 +9,7 @@ import (
 	"github.com/openai/openai-go/v3/shared"
 
 	"github.com/katasec/forge-core"
+	"github.com/katasec/forge-core/message"
 )
 
 // buildRequest adapts a Forge provider request into OpenAI Responses parameters.
@@ -34,7 +35,7 @@ func providerResponse(apiResp *responses.Response) (*forge.ProviderResponse, err
 	}
 
 	return &forge.ProviderResponse{
-		Messages:     []forge.Message{forge.AssistantText(text)},
+		Messages:     []forge.Message{message.AssistantText(text)},
 		FinishReason: forge.FinishReasonStop,
 		Usage: forge.TokenUsage{
 			InputTokens:           int(apiResp.Usage.InputTokens),
