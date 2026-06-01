@@ -1,0 +1,15 @@
+{
+  "schema_version": "forge.agent.v1",
+  "name": "simple-agent",
+  "version": "v0.1.0",
+  "description": "Minimal package with a single context skill, for the contract smoke test.",
+  "skills": [
+    {
+      "name": "session_start",
+      "kind": "context",
+      "runner": "markdown",
+      "entrypoint": "skills/session_start.md",
+      "description": "Loads session-start guidance as context."
+    }
+  ]
+}

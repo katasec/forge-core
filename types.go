@@ -9,6 +9,8 @@ import (
 	"github.com/katasec/forge-core/message"
 	"github.com/katasec/forge-core/middleware"
 	"github.com/katasec/forge-core/provider"
+	"github.com/katasec/forge-core/skill"
+	"github.com/katasec/forge-core/skill/markdown"
 	"github.com/katasec/forge-core/tool"
 	"github.com/katasec/forge-core/tool/registry"
 )
@@ -73,4 +75,27 @@ type ErrorPolicy = runtime.ErrorPolicy
 const (
 	ErrorPolicyStop     = runtime.ErrorPolicyStop
 	ErrorPolicyContinue = runtime.ErrorPolicyContinue
+)
+
+type SkillKind = skill.Kind
+type SkillSpec = skill.Spec
+type SkillInput = skill.Input
+type SkillResult = skill.Result
+type SkillStatus = skill.Status
+type SkillRunner = skill.Runner
+type SkillRegistry = skill.Registry
+type SkillManifest = skill.Manifest
+type SkillOutcome = skill.Outcome
+type MarkdownRunner = markdown.Runner
+
+const (
+	SkillKindContext = skill.KindContext
+	SkillKindProcess = skill.KindProcess
+
+	SkillStatusSuccess = skill.StatusSuccess
+	SkillStatusError   = skill.StatusError
+
+	SkillOutcomeExecute = skill.OutcomeExecute
+	SkillOutcomeExpose  = skill.OutcomeExpose
+	SkillOutcomeRefuse  = skill.OutcomeRefuse
 )
