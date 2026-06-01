@@ -98,7 +98,7 @@ func TestExecutorMultipleCalls(t *testing.T) {
 }
 
 func addTool() tool.Tool {
-	return tool.Func[addInput]("add", "adds", func(_ context.Context, in addInput) (string, error) {
+	return tool.Func[addInput, string]("add", "adds", func(_ context.Context, in addInput) (string, error) {
 		b, err := json.Marshal(in.A + in.B)
 		if err != nil {
 			return "", err
@@ -108,7 +108,7 @@ func addTool() tool.Tool {
 }
 
 func failingTool() tool.Tool {
-	return tool.Func[addInput]("fail", "fails", func(_ context.Context, _ addInput) (string, error) {
+	return tool.Func[addInput, string]("fail", "fails", func(_ context.Context, _ addInput) (string, error) {
 		return "", errors.New("something broke")
 	})
 }

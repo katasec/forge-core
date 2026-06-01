@@ -28,21 +28,21 @@ type Definition struct {
 }
 
 // funcTool is the unexported implementation backing the Func helper.
-type funcTool[T any] struct {
+type funcTool[In any, Out any] struct {
 	name        string
 	description string
 	schema      Schema
-	fn          func(ctx context.Context, input T) (string, error)
+	fn          func(ctx context.Context, input In) (Out, error)
 }
 
 // Func creates a Tool from a typed function. The JSON Schema for parameters
-// is derived from T using invopop/jsonschema at construction time.
-func Func[T any](name, description string, fn func(ctx context.Context, input T) (string, error)) Tool {
+// is derived from In using invopop/jsonschema at construction time.
+func Func[In any, Out any](name, description string, fn func(ctx context.Context, input In) (Out, error)) Tool {
 	r := new(jsonschema.Reflector)
-	s := r.Reflect(new(T))
+	s := r.Reflect(new(In))
 	params, _ := json.Marshal(s)
 
-	return &funcTool[T]{
+	return &funcTool[In, Out]{
 		name:        name,
 		description: description,
 		schema:      Schema{Parameters: params},
@@ -50,14 +50,34 @@ func Func[T any](name, description string, fn func(ctx context.Context, input T)
 	}
 }
 
-func (t *funcTool[T]) Name() string        { return t.name }
-func (t *funcTool[T]) Description() string { return t.description }
-func (t *funcTool[T]) Schema() Schema      { return t.schema }
+func (t *funcTool[In, Out]) Name() string        { return t.name }
+func (t *funcTool[In, Out]) Description() string { return t.description }
+func (t *funcTool[In, Out]) Schema() Schema      { return t.schema }
 
-func (t *funcTool[T]) Invoke(ctx context.Context, args json.RawMessage) (string, error) {
-	var input T
+func (t *funcTool[In, Out]) Invoke(ctx context.Context, args json.RawMessage) (string, error) {
+	var input In
 	if err := json.Unmarshal(args, &input); err != nil {
 		return "", err
 	}
-	return t.fn(ctx, input)
+
+	output, err := t.fn(ctx, input)
+	if err != nil {
+		return "", err
+	}
+	return encodeOutput(output)
+}
+
+func encodeOutput(output any) (string, error) {
+	switch v := output.(type) {
+	case string:
+		return v, nil
+	case []byte:
+		return string(v), nil
+	default:
+		data, err := json.Marshal(output)
+		if err != nil {
+			return "", err
+		}
+		return string(data), nil
+	}
 }

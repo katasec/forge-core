@@ -75,7 +75,7 @@ type addInput struct {
 }
 
 func addTool(name, description string) tool.Tool {
-	return tool.Func[addInput](name, description, func(_ context.Context, in addInput) (string, error) {
+	return tool.Func[addInput, string](name, description, func(_ context.Context, in addInput) (string, error) {
 		return "", nil
 	})
 }

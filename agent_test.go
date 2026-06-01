@@ -74,7 +74,7 @@ func TestNewAgentDefaultErrorPolicy(t *testing.T) {
 	agent, err := NewAgent(Config{
 		Provider: provider,
 		Tools: []Tool{
-			Func[struct{}]("broken", "always fails", func(_ context.Context, _ struct{}) (string, error) {
+			Func[struct{}, string]("broken", "always fails", func(_ context.Context, _ struct{}) (string, error) {
 				return "", errors.New("tool broke")
 			}),
 		},
@@ -327,7 +327,7 @@ func TestAgentRunIterLimit(t *testing.T) {
 		Provider:      provider,
 		MaxIterations: 2,
 		Tools: []Tool{
-			Func[echoInput]("echo", "echoes", func(_ context.Context, in echoInput) (string, error) {
+			Func[echoInput, string]("echo", "echoes", func(_ context.Context, in echoInput) (string, error) {
 				return in.Text, nil
 			}),
 		},
@@ -377,7 +377,7 @@ func TestAgentRunToolErrorStop(t *testing.T) {
 		Provider:    provider,
 		ErrorPolicy: ErrorPolicyStop,
 		Tools: []Tool{
-			Func[emptyInput]("broken", "always fails", func(_ context.Context, _ emptyInput) (string, error) {
+			Func[emptyInput, string]("broken", "always fails", func(_ context.Context, _ emptyInput) (string, error) {
 				return "", errors.New("tool broke")
 			}),
 		},
@@ -426,7 +426,7 @@ func TestAgentRunToolErrorContinue(t *testing.T) {
 		Provider:    provider,
 		ErrorPolicy: ErrorPolicyContinue,
 		Tools: []Tool{
-			Func[emptyInput]("broken", "always fails", func(_ context.Context, _ emptyInput) (string, error) {
+			Func[emptyInput, string]("broken", "always fails", func(_ context.Context, _ emptyInput) (string, error) {
 				return "", errors.New("tool broke")
 			}),
 		},
@@ -517,7 +517,7 @@ func TestAgentRunUsageAccumulation(t *testing.T) {
 	agent, _ := NewAgent(Config{
 		Provider: provider,
 		Tools: []Tool{
-			Func[emptyInput]("noop", "does nothing", func(_ context.Context, _ emptyInput) (string, error) {
+			Func[emptyInput, string]("noop", "does nothing", func(_ context.Context, _ emptyInput) (string, error) {
 				return "ok", nil
 			}),
 		},

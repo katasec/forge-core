@@ -109,7 +109,7 @@ func AssistantText(content string) Message {
 	return message.AssistantText(content)
 }
 
-func Func[T any](name, description string, fn func(ctx context.Context, input T) (string, error)) Tool {
+func Func[In any, Out any](name, description string, fn func(ctx context.Context, input In) (Out, error)) Tool {
 	return tool.Func(name, description, fn)
 }
 

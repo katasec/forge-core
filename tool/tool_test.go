@@ -12,7 +12,7 @@ type addInput struct {
 }
 
 func TestFuncSchemaGeneration(t *testing.T) {
-	tool := Func[addInput]("add", "adds two numbers", func(_ context.Context, in addInput) (string, error) {
+	tool := Func[addInput, string]("add", "adds two numbers", func(_ context.Context, in addInput) (string, error) {
 		return "", nil
 	})
 
@@ -38,12 +38,8 @@ func TestFuncSchemaGeneration(t *testing.T) {
 }
 
 func TestFuncInvoke(t *testing.T) {
-	tool := Func[addInput]("add", "adds two numbers", func(_ context.Context, in addInput) (string, error) {
-		b, err := json.Marshal(in.A + in.B)
-		if err != nil {
-			return "", err
-		}
-		return string(b), nil
+	tool := Func[addInput, int]("add", "adds two numbers", func(_ context.Context, in addInput) (int, error) {
+		return in.A + in.B, nil
 	})
 
 	args := json.RawMessage(`{"a": 2, "b": 3}`)
@@ -56,8 +52,54 @@ func TestFuncInvoke(t *testing.T) {
 	}
 }
 
+func TestFuncInvokeStringOutput(t *testing.T) {
+	tool := Func[addInput, string]("add", "adds two numbers", func(_ context.Context, in addInput) (string, error) {
+		return "sum", nil
+	})
+
+	result, err := tool.Invoke(context.Background(), json.RawMessage(`{"a": 2, "b": 3}`))
+	if err != nil {
+		t.Fatalf("Invoke error: %v", err)
+	}
+	if result != "sum" {
+		t.Errorf("Invoke result = %q, want %q", result, "sum")
+	}
+}
+
+func TestFuncInvokeBytesOutput(t *testing.T) {
+	tool := Func[addInput, []byte]("add", "adds two numbers", func(_ context.Context, in addInput) ([]byte, error) {
+		return []byte("bytes"), nil
+	})
+
+	result, err := tool.Invoke(context.Background(), json.RawMessage(`{"a": 2, "b": 3}`))
+	if err != nil {
+		t.Fatalf("Invoke error: %v", err)
+	}
+	if result != "bytes" {
+		t.Errorf("Invoke result = %q, want %q", result, "bytes")
+	}
+}
+
+func TestFuncInvokeStructOutput(t *testing.T) {
+	type addOutput struct {
+		Sum int `json:"sum"`
+	}
+
+	tool := Func[addInput, addOutput]("add", "adds two numbers", func(_ context.Context, in addInput) (addOutput, error) {
+		return addOutput{Sum: in.A + in.B}, nil
+	})
+
+	result, err := tool.Invoke(context.Background(), json.RawMessage(`{"a": 2, "b": 3}`))
+	if err != nil {
+		t.Fatalf("Invoke error: %v", err)
+	}
+	if result != `{"sum":5}` {
+		t.Errorf("Invoke result = %q, want %q", result, `{"sum":5}`)
+	}
+}
+
 func TestFuncInvokeInvalidArgs(t *testing.T) {
-	tool := Func[addInput]("add", "adds two numbers", func(_ context.Context, in addInput) (string, error) {
+	tool := Func[addInput, string]("add", "adds two numbers", func(_ context.Context, in addInput) (string, error) {
 		return "", nil
 	})
 
