@@ -7,9 +7,7 @@ Forge Core handles the **LLM call -> tool execution -> response** cycle. You sup
 ## Install
 
 ```bash
-go get github.com/katasec/forge-core
-go get github.com/katasec/forge-core/provider/xai     # xAI Responses API with tools, web search, and citations
-go get github.com/katasec/forge-core/provider/openai  # OpenAI Responses API
+go get github.com/katasec/forge-core@v0.1.0
 ```
 
 ## Quick Start
