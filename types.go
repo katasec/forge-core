@@ -9,7 +9,6 @@ import (
 	"github.com/katasec/forge-core/memory"
 	"github.com/katasec/forge-core/memory/inmem"
 	"github.com/katasec/forge-core/message"
-	"github.com/katasec/forge-core/metadata"
 	"github.com/katasec/forge-core/middleware"
 	"github.com/katasec/forge-core/provider"
 	"github.com/katasec/forge-core/tool"
@@ -71,8 +70,6 @@ type InMemoryStore = inmem.Store
 type RunFunc = middleware.RunFunc
 type Middleware = middleware.Middleware
 
-type Metadata = metadata.Metadata
-
 type ErrorPolicy = runtime.ErrorPolicy
 
 const (
@@ -122,12 +119,4 @@ func NewToolRegistry() *ToolRegistry {
 
 func NewInMemoryStore() *InMemoryStore {
 	return inmem.New()
-}
-
-func WithMetadata(ctx context.Context, m Metadata) context.Context {
-	return metadata.WithMetadata(ctx, m)
-}
-
-func MetadataFromContext(ctx context.Context) (Metadata, bool) {
-	return metadata.FromContext(ctx)
 }

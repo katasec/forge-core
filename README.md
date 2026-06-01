@@ -240,21 +240,6 @@ agent, _ := forge.NewAgent(forge.Config{
 })
 ```
 
-### Metadata
-
-Attach arbitrary key-value data to the context, accessible by tools and middleware:
-
-```go
-ctx := forge.WithMetadata(context.Background(), forge.Metadata{
-    Values: map[string]string{"user_id": "123", "tenant": "acme"},
-})
-
-// Inside a tool:
-if meta, ok := forge.MetadataFromContext(ctx); ok {
-    userID := meta.Values["user_id"]
-}
-```
-
 ## License
 
 MIT

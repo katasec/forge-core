@@ -35,12 +35,11 @@ type ImageContent struct {
 
 // ContentBlock is one typed unit of message content.
 type ContentBlock struct {
-	Type       ContentType    `json:"type"`
-	Text       string         `json:"text,omitempty"`
-	Image      *ImageContent  `json:"image,omitempty"`
-	ToolCall   *tool.Call     `json:"tool_call,omitempty"`
-	ToolResult *tool.Result   `json:"tool_result,omitempty"`
-	Metadata   map[string]any `json:"metadata,omitempty"`
+	Type       ContentType   `json:"type"`
+	Text       string        `json:"text,omitempty"`
+	Image      *ImageContent `json:"image,omitempty"`
+	ToolCall   *tool.Call    `json:"tool_call,omitempty"`
+	ToolResult *tool.Result  `json:"tool_result,omitempty"`
 }
 
 // Text creates a text content block.

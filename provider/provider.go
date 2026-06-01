@@ -53,7 +53,6 @@ type Response struct {
 	Messages     []message.Message `json:"messages"`
 	FinishReason FinishReason      `json:"finish_reason"`
 	Usage        TokenUsage        `json:"usage"`
-	Metadata     map[string]any    `json:"metadata,omitempty"`
 }
 
 // Provider makes a single LLM call. It does not loop.
