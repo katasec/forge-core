@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/katasec/forge-core/memory/inmem"
+	"github.com/katasec/forge-core/tool"
 )
 
 // mockProvider is a test double that returns pre-configured responses.
@@ -74,7 +75,7 @@ func TestNewAgentDefaultErrorPolicy(t *testing.T) {
 	agent, err := NewAgent(Config{
 		Provider: provider,
 		Tools: []Tool{
-			Func[struct{}, string]("broken", "always fails", func(_ context.Context, _ struct{}) (string, error) {
+			tool.Func[struct{}, string]("broken", "always fails", func(_ context.Context, _ struct{}) (string, error) {
 				return "", errors.New("tool broke")
 			}),
 		},
@@ -327,7 +328,7 @@ func TestAgentRunIterLimit(t *testing.T) {
 		Provider:      provider,
 		MaxIterations: 2,
 		Tools: []Tool{
-			Func[echoInput, string]("echo", "echoes", func(_ context.Context, in echoInput) (string, error) {
+			tool.Func[echoInput, string]("echo", "echoes", func(_ context.Context, in echoInput) (string, error) {
 				return in.Text, nil
 			}),
 		},
@@ -377,7 +378,7 @@ func TestAgentRunToolErrorStop(t *testing.T) {
 		Provider:    provider,
 		ErrorPolicy: ErrorPolicyStop,
 		Tools: []Tool{
-			Func[emptyInput, string]("broken", "always fails", func(_ context.Context, _ emptyInput) (string, error) {
+			tool.Func[emptyInput, string]("broken", "always fails", func(_ context.Context, _ emptyInput) (string, error) {
 				return "", errors.New("tool broke")
 			}),
 		},
@@ -426,7 +427,7 @@ func TestAgentRunToolErrorContinue(t *testing.T) {
 		Provider:    provider,
 		ErrorPolicy: ErrorPolicyContinue,
 		Tools: []Tool{
-			Func[emptyInput, string]("broken", "always fails", func(_ context.Context, _ emptyInput) (string, error) {
+			tool.Func[emptyInput, string]("broken", "always fails", func(_ context.Context, _ emptyInput) (string, error) {
 				return "", errors.New("tool broke")
 			}),
 		},
@@ -517,7 +518,7 @@ func TestAgentRunUsageAccumulation(t *testing.T) {
 	agent, _ := NewAgent(Config{
 		Provider: provider,
 		Tools: []Tool{
-			Func[emptyInput, string]("noop", "does nothing", func(_ context.Context, _ emptyInput) (string, error) {
+			tool.Func[emptyInput, string]("noop", "does nothing", func(_ context.Context, _ emptyInput) (string, error) {
 				return "ok", nil
 			}),
 		},

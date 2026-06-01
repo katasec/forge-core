@@ -1,8 +1,6 @@
 package forge
 
 import (
-	"context"
-
 	"github.com/katasec/forge-core/executor"
 	"github.com/katasec/forge-core/executor/sequential"
 	"github.com/katasec/forge-core/internal/runtime"
@@ -107,10 +105,6 @@ func UserText(content string) Message {
 
 func AssistantText(content string) Message {
 	return message.AssistantText(content)
-}
-
-func Func[In any, Out any](name, description string, fn func(ctx context.Context, input In) (Out, error)) Tool {
-	return tool.Func(name, description, fn)
 }
 
 func NewToolRegistry() *ToolRegistry {

@@ -7,7 +7,7 @@ Forge Core handles the **LLM call -> tool execution -> response** cycle. You sup
 ## Install
 
 ```bash
-go get github.com/katasec/forge-core@v0.2.0
+go get github.com/katasec/forge-core@v0.3.0
 ```
 
 ## Quick Start
@@ -99,6 +99,8 @@ type Provider interface {
 Define tools with `Func[Input, Output]`. The JSON schema for parameters is derived from the input struct at construction time using [invopop/jsonschema](https://github.com/invopop/jsonschema). String and byte-slice outputs are returned as-is; other outputs are encoded as JSON before being sent back to the model.
 
 ```go
+import "github.com/katasec/forge-core/tool"
+
 type SearchInput struct {
     Query string `json:"query" jsonschema:"description=Search query"`
     Limit int    `json:"limit" jsonschema:"description=Max results"`
@@ -121,7 +123,7 @@ func search(ctx context.Context, in SearchInput) (SearchResult, error) {
 agent, err := forge.NewAgent(forge.Config{
     Provider: provider,
     Tools: []forge.Tool{
-        forge.Func[SearchInput, SearchResult]("search", "Search the database", search),
+        tool.Func[SearchInput, SearchResult]("search", "Search the database", search),
     },
 })
 ```
