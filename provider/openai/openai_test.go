@@ -239,3 +239,122 @@ type inputTokensDetails struct {
 type outputTokensDetails struct {
 	ReasoningTokens int `json:"reasoning_tokens"`
 }
+
+// TestGenerateSendsToolsAndParsesFunctionCall covers the OpenAI tool round
+// trip: definitions reach the wire and a function_call output becomes a
+// Forge ToolCall.
+func TestGenerateSendsToolsAndParsesFunctionCall(t *testing.T) {
+	var got toolWireRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"output": []map[string]any{{
+				"type": "function_call", "call_id": "call_1",
+				"name": "search", "arguments": `{"query":"go"}`,
+			}},
+			"usage": map[string]any{"input_tokens": 10, "output_tokens": 5},
+		})
+	}))
+	defer srv.Close()
+
+	p := New("test-key", ModelGPT54Nano, WithBaseURL(srv.URL))
+	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
+		Messages: []forge.Message{message.UserText("find something")},
+		Tools: []forge.ToolDefinition{{
+			Name:        "search",
+			Description: "Search the database",
+			Schema:      forge.ToolSchema{Parameters: json.RawMessage(`{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}`)},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+
+	if len(got.Tools) != 1 {
+		t.Fatalf("tools sent = %d, want 1", len(got.Tools))
+	}
+	if got.Tools[0].Name != "search" || got.Tools[0].Type != "function" {
+		t.Errorf("tool = %+v, want a function tool named search", got.Tools[0])
+	}
+	if _, ok := got.Tools[0].Parameters["properties"]; !ok {
+		t.Errorf("parameters = %v, want a schema with properties", got.Tools[0].Parameters)
+	}
+
+	if resp.FinishReason != forge.FinishReasonToolUse {
+		t.Errorf("finish reason = %q, want %q", resp.FinishReason, forge.FinishReasonToolUse)
+	}
+	calls := resp.Messages[0].ToolCalls()
+	if len(calls) != 1 || calls[0].ID != "call_1" || calls[0].Name != "search" {
+		t.Fatalf("calls = %+v, want one call_1/search", calls)
+	}
+	if string(calls[0].Arguments) != `{"query":"go"}` {
+		t.Errorf("arguments = %s, want {\"query\":\"go\"}", calls[0].Arguments)
+	}
+}
+
+// TestGenerateSendsToolResults checks a tool result is replayed as its own
+// function_call_output input item carrying the originating call id.
+func TestGenerateSendsToolResults(t *testing.T) {
+	var got toolWireRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&got)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"output": []map[string]any{{
+				"type": "message", "role": "assistant",
+				"content": []map[string]any{{"type": "output_text", "text": "done"}},
+			}},
+			"usage": map[string]any{"input_tokens": 1, "output_tokens": 1},
+		})
+	}))
+	defer srv.Close()
+
+	p := New("test-key", ModelGPT54Nano, WithBaseURL(srv.URL))
+	_, err := p.Generate(context.Background(), forge.ProviderRequest{
+		Messages: []forge.Message{
+			message.UserText("find something"),
+			{Role: forge.RoleAssistant, Content: []forge.ContentBlock{
+				message.ToolCall(forge.ToolCall{ID: "call_1", Name: "search", Arguments: json.RawMessage(`{"query":"go"}`)}),
+			}},
+			message.ToolMessage(forge.ToolResult{CallID: "call_1", Content: "two results"}),
+		},
+	})
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+
+	if len(got.Input) != 3 {
+		t.Fatalf("input items = %d, want 3", len(got.Input))
+	}
+	if got.Input[1].Type != "function_call" || got.Input[1].CallID != "call_1" {
+		t.Errorf("item[1] = %+v, want function_call for call_1", got.Input[1])
+	}
+	if got.Input[2].Type != "function_call_output" || got.Input[2].CallID != "call_1" {
+		t.Errorf("item[2] = %+v, want function_call_output for call_1", got.Input[2])
+	}
+	if got.Input[2].Output != "two results" {
+		t.Errorf("output = %q, want %q", got.Input[2].Output, "two results")
+	}
+}
+
+type toolWireRequest struct {
+	Tools []toolWire      `json:"tools"`
+	Input []toolWireInput `json:"input"`
+}
+
+type toolWire struct {
+	Type       string         `json:"type"`
+	Name       string         `json:"name"`
+	Parameters map[string]any `json:"parameters"`
+}
+
+type toolWireInput struct {
+	Type   string `json:"type"`
+	Role   string `json:"role"`
+	CallID string `json:"call_id"`
+	Name   string `json:"name"`
+	Output string `json:"output"`
+}

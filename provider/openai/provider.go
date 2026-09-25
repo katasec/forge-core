@@ -38,6 +38,7 @@ func New(apiKey string, model Model, opts ...Option) *OpenAIProvider {
 // Capabilities describes the OpenAI provider features Forge currently supports.
 func (p *OpenAIProvider) Capabilities() forge.Capabilities {
 	return forge.Capabilities{
+		Tools:      true,
 		Images:     true,
 		Usage:      true,
 		Production: true,

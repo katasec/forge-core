@@ -11,3 +11,13 @@ func WithBaseURL(baseURL string) Option {
 		p.baseURL = strings.TrimRight(baseURL, "/")
 	}
 }
+
+// WithMaxTokens overrides the maximum number of tokens Anthropic may generate
+// in a single response. Values below one are ignored.
+func WithMaxTokens(maxTokens int) Option {
+	return func(p *AnthropicProvider) {
+		if maxTokens > 0 {
+			p.maxTokens = maxTokens
+		}
+	}
+}

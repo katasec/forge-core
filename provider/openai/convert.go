@@ -2,14 +2,17 @@ package openai
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 
 	openaisdk "github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/packages/param"
 	"github.com/openai/openai-go/v3/responses"
 	"github.com/openai/openai-go/v3/shared"
 
 	"github.com/katasec/forge-core"
 	"github.com/katasec/forge-core/message"
+	"github.com/katasec/forge-core/tool"
 )
 
 // buildRequest adapts a Forge provider request into OpenAI Responses parameters.
@@ -24,19 +27,39 @@ func (p *OpenAIProvider) buildRequest(req forge.ProviderRequest) (responses.Resp
 			OfInputItemList: input,
 		},
 		Instructions: openaisdk.String(req.SystemPrompt),
+		Tools:        toOpenAITools(req.Tools),
 	}, nil
+}
+
+// toOpenAITools converts Forge tool definitions into OpenAI function tools.
+// Strict mode is left off: it imposes schema rules the reflected schemas do
+// not necessarily satisfy.
+func toOpenAITools(defs []forge.ToolDefinition) []responses.ToolUnionParam {
+	if len(defs) == 0 {
+		return nil
+	}
+
+	tools := make([]responses.ToolUnionParam, 0, len(defs))
+	for _, d := range defs {
+		param := responses.ToolParamOfFunction(d.Name, tool.ObjectSchema(d.Schema.Parameters), false)
+		if d.Description != "" && param.OfFunction != nil {
+			param.OfFunction.Description = openaisdk.String(d.Description)
+		}
+		tools = append(tools, param)
+	}
+	return tools
 }
 
 // providerResponse adapts an OpenAI Responses result into Forge's provider response.
 func providerResponse(apiResp *responses.Response) (*forge.ProviderResponse, error) {
-	text := apiResp.OutputText()
-	if text == "" {
+	blocks := fromOpenAIOutput(apiResp)
+	if len(blocks) == 0 {
 		return nil, fmt.Errorf("no assistant messages in response")
 	}
 
 	return &forge.ProviderResponse{
-		Messages:     []forge.Message{message.AssistantText(text)},
-		FinishReason: forge.FinishReasonStop,
+		Messages:     []forge.Message{{Role: forge.RoleAssistant, Content: blocks}},
+		FinishReason: finishReason(blocks),
 		Usage: forge.TokenUsage{
 			InputTokens:           int(apiResp.Usage.InputTokens),
 			CachedInputTokens:     int(apiResp.Usage.InputTokensDetails.CachedTokens),
@@ -55,22 +78,85 @@ func toOpenAIMessages(messages []forge.Message) (responses.ResponseInputParam, e
 			continue
 		}
 
-		item, err := toOpenAIMessage(msg)
+		converted, err := toOpenAIMessage(msg)
 		if err != nil {
 			return nil, err
 		}
-		items = append(items, item)
+		items = append(items, converted...)
 	}
 	return items, nil
 }
 
-// toOpenAIMessage converts one Forge message into one OpenAI response input item.
-func toOpenAIMessage(msg forge.Message) (responses.ResponseInputItemUnionParam, error) {
+// toOpenAIMessage converts one Forge message into OpenAI response input items.
+// Tool calls and tool results are separate items in the Responses API, so a
+// single Forge message can expand into several.
+func toOpenAIMessage(msg forge.Message) ([]responses.ResponseInputItemUnionParam, error) {
+	if results := msg.ToolResults(); len(results) > 0 {
+		return toOpenAIToolResults(results), nil
+	}
+	if calls := msg.ToolCalls(); len(calls) > 0 {
+		return toOpenAIToolCalls(msg, calls), nil
+	}
+
 	content, err := toOpenAIContent(msg.Role, msg.Content)
 	if err != nil {
-		return responses.ResponseInputItemUnionParam{}, err
+		return nil, err
 	}
-	return responses.ResponseInputItemParamOfMessage(content, responses.EasyInputMessageRole(msg.Role)), nil
+	return []responses.ResponseInputItemUnionParam{
+		responses.ResponseInputItemParamOfMessage(content, responses.EasyInputMessageRole(msg.Role)),
+	}, nil
+}
+
+// toOpenAIToolCalls renders assistant text plus its function calls as items.
+func toOpenAIToolCalls(msg forge.Message, calls []forge.ToolCall) []responses.ResponseInputItemUnionParam {
+	items := make([]responses.ResponseInputItemUnionParam, 0, len(calls)+1)
+	if text := msg.Text(); text != "" {
+		items = append(items, responses.ResponseInputItemParamOfMessage(text, responses.EasyInputMessageRole(msg.Role)))
+	}
+	for _, call := range calls {
+		items = append(items, responses.ResponseInputItemParamOfFunctionCall(string(call.Arguments), call.ID, call.Name))
+	}
+	return items
+}
+
+// toOpenAIToolResults renders tool results as function call output items.
+func toOpenAIToolResults(results []forge.ToolResult) []responses.ResponseInputItemUnionParam {
+	items := make([]responses.ResponseInputItemUnionParam, 0, len(results))
+	for _, r := range results {
+		item := responses.ResponseInputItemParamOfFunctionCallOutput(r.Content)
+		item.OfFunctionCallOutput.CallID = param.NewOpt(r.CallID)
+		items = append(items, item)
+	}
+	return items
+}
+
+// fromOpenAIOutput converts OpenAI output items into Forge content blocks.
+func fromOpenAIOutput(apiResp *responses.Response) []forge.ContentBlock {
+	var blocks []forge.ContentBlock
+	if text := apiResp.OutputText(); text != "" {
+		blocks = append(blocks, message.Text(text))
+	}
+	for _, item := range apiResp.Output {
+		if item.Type != "function_call" {
+			continue
+		}
+		blocks = append(blocks, message.ToolCall(forge.ToolCall{
+			ID:        item.CallID,
+			Name:      item.Name,
+			Arguments: json.RawMessage(item.Arguments.OfString),
+		}))
+	}
+	return blocks
+}
+
+// finishReason reports tool use when the model asked for at least one call.
+func finishReason(blocks []forge.ContentBlock) forge.FinishReason {
+	for _, b := range blocks {
+		if b.Type == forge.ContentTypeToolCall {
+			return forge.FinishReasonToolUse
+		}
+	}
+	return forge.FinishReasonStop
 }
 
 // toOpenAIContent converts Forge content blocks into OpenAI message content parts.
@@ -94,7 +180,7 @@ func toOpenAIContentBlock(role forge.Role, block forge.ContentBlock) (responses.
 	case forge.ContentTypeImage:
 		return toOpenAIImageContent(role, block)
 	case forge.ContentTypeToolCall, forge.ContentTypeToolResult:
-		return responses.ResponseInputContentUnionParam{}, fmt.Errorf("openai provider does not support tool content yet")
+		return responses.ResponseInputContentUnionParam{}, fmt.Errorf("tool content must be converted as its own input item, not as message content")
 	default:
 		return responses.ResponseInputContentUnionParam{}, fmt.Errorf("unsupported content block type: %s", block.Type)
 	}
