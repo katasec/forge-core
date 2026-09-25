@@ -15,15 +15,15 @@ import (
 var _ forge.Provider = (*AnthropicProvider)(nil)
 
 func TestNew(t *testing.T) {
-	p := New("test-key", "claude-sonnet-4-20250514")
+	p := New("test-key", ModelClaudeSonnet5)
 	if p == nil {
 		t.Fatal("New returned nil")
 	}
 	if p.apiKey != "test-key" {
 		t.Errorf("apiKey = %q, want %q", p.apiKey, "test-key")
 	}
-	if p.model != "claude-sonnet-4-20250514" {
-		t.Errorf("model = %q, want %q", p.model, "claude-sonnet-4-20250514")
+	if p.model != ModelClaudeSonnet5 {
+		t.Errorf("model = %q, want %q", p.model, ModelClaudeSonnet5)
 	}
 }
 
@@ -44,8 +44,8 @@ func TestGenerate(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			t.Fatalf("decode request: %v", err)
 		}
-		if req.Model != "claude-sonnet-4-20250514" {
-			t.Errorf("model = %q, want %q", req.Model, "claude-sonnet-4-20250514")
+		if req.Model != "claude-sonnet-5" {
+			t.Errorf("model = %q, want %q", req.Model, "claude-sonnet-5")
 		}
 		if len(req.System) != 1 || req.System[0].Text != "You are helpful." {
 			t.Errorf("system = %q, want %q", req.System, "You are helpful.")
@@ -55,7 +55,7 @@ func TestGenerate(t *testing.T) {
 			ID:         "msg_test",
 			Type:       "message",
 			Role:       "assistant",
-			Model:      "claude-sonnet-4-20250514",
+			Model:      "claude-sonnet-5",
 			Content:    []contentBlock{{Type: "text", Text: "Hello!"}},
 			StopReason: "end_turn",
 			Usage:      usageBlock{InputTokens: 10, OutputTokens: 5},
@@ -65,7 +65,7 @@ func TestGenerate(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := New("test-key", "claude-sonnet-4-20250514", WithBaseURL(srv.URL))
+	p := New("test-key", ModelClaudeSonnet5, WithBaseURL(srv.URL))
 
 	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
 		SystemPrompt: "You are helpful.",
@@ -98,7 +98,7 @@ func TestGenerateAPIError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := New("bad-key", "claude-sonnet-4-20250514", WithBaseURL(srv.URL))
+	p := New("bad-key", ModelClaudeSonnet5, WithBaseURL(srv.URL))
 
 	_, err := p.Generate(context.Background(), forge.ProviderRequest{
 		Messages: []forge.Message{message.UserText("Hi")},

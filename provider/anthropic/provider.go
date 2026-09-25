@@ -15,13 +15,13 @@ import (
 type AnthropicProvider struct {
 	baseURL   string
 	apiKey    string
-	model     string
+	model     Model
 	client    *http.Client
 	sdkClient anthropicsdk.Client
 }
 
 // New creates an Anthropic provider for the given API key and model.
-func New(apiKey, model string, opts ...Option) *AnthropicProvider {
+func New(apiKey string, model Model, opts ...Option) *AnthropicProvider {
 	p := &AnthropicProvider{
 		baseURL: "https://api.anthropic.com",
 		apiKey:  apiKey,
