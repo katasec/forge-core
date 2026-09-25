@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	openaisdk "github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/packages/param"
 	"github.com/openai/openai-go/v3/responses"
 	"github.com/openai/openai-go/v3/shared"
 
@@ -65,7 +66,9 @@ func toXAIMessage(m forge.Message) ([]responses.ResponseInputItemUnionParam, err
 func toXAIToolResults(results []forge.ToolResult) []responses.ResponseInputItemUnionParam {
 	items := make([]responses.ResponseInputItemUnionParam, 0, len(results))
 	for _, tr := range results {
-		items = append(items, responses.ResponseInputItemParamOfFunctionCallOutput(tr.CallID, tr.Content))
+		item := responses.ResponseInputItemParamOfFunctionCallOutput(tr.Content)
+		item.OfFunctionCallOutput.CallID = param.NewOpt(tr.CallID)
+		items = append(items, item)
 	}
 	return items
 }
