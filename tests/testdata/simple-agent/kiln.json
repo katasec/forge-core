@@ -1,5 +1,5 @@
 {
-  "schema_version": "forge.agent.v1",
+  "schema_version": "kiln.agent.v1",
   "name": "simple-agent",
   "version": "v0.1.0",
   "description": "Minimal package with a single context skill, for the contract smoke test.",

@@ -109,7 +109,7 @@ const (
 )
 
 // ResultSchemaV1 is the schema identifier for the v1 result envelope.
-const ResultSchemaV1 = "forge.skill.result.v1"
+const ResultSchemaV1 = "kiln.skill.result.v1"
 
 // Result is the structured output of a skill execution. Runners emit it as JSON
 // on stdout; stderr is reserved for logs.

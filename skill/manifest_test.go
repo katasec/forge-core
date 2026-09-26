@@ -3,7 +3,7 @@ package skill
 import "testing"
 
 const validManifest = `{
-  "schema_version": "forge.agent.v1",
+  "schema_version": "kiln.agent.v1",
   "name": "api-architect",
   "version": "v1.0.0",
   "skills": [
@@ -31,12 +31,12 @@ func TestParseManifestErrors(t *testing.T) {
 		json string
 	}{
 		{name: "bad json", json: `{`},
-		{name: "missing name", json: `{"schema_version":"forge.agent.v1","skills":[]}`},
+		{name: "missing name", json: `{"schema_version":"kiln.agent.v1","skills":[]}`},
 		{name: "wrong schema", json: `{"schema_version":"v2","name":"x","skills":[]}`},
-		{name: "invalid skill", json: `{"schema_version":"forge.agent.v1","name":"x","skills":[{"name":"a","kind":"context"}]}`},
+		{name: "invalid skill", json: `{"schema_version":"kiln.agent.v1","name":"x","skills":[{"name":"a","kind":"context"}]}`},
 		{
 			name: "duplicate skill",
-			json: `{"schema_version":"forge.agent.v1","name":"x","skills":[
+			json: `{"schema_version":"kiln.agent.v1","name":"x","skills":[
 				{"name":"a","kind":"context","runner":"markdown","entrypoint":"a.md"},
 				{"name":"a","kind":"context","runner":"markdown","entrypoint":"b.md"}
 			]}`,

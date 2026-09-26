@@ -9,7 +9,7 @@ import (
 )
 
 // ManifestSchemaV1 is the schema identifier for the v1 agent-package manifest.
-const ManifestSchemaV1 = "forge.agent.v1"
+const ManifestSchemaV1 = "kiln.agent.v1"
 
 // Manifest is the packaged (machine) representation of a Kiln agent package,
 // the JSON form distributed inside an OCI artifact.

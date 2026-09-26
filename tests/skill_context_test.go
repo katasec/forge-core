@@ -20,7 +20,7 @@ const packageRoot = "testdata/simple-agent"
 // and get the markdown file's content back.
 func TestContextSkillEndToEnd(t *testing.T) {
 	// 1. Load the manifest.
-	m, err := skill.LoadManifest(filepath.Join(packageRoot, "forge.json"))
+	m, err := skill.LoadManifest(filepath.Join(packageRoot, "kiln.json"))
 	if err != nil {
 		t.Fatalf("LoadManifest() error = %v", err)
 	}
