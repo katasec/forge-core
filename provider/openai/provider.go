@@ -1,4 +1,4 @@
-// Package openai implements forge.Provider using the OpenAI Responses API.
+// Package openai implements kiln.Provider using the OpenAI Responses API.
 package openai
 
 import (
@@ -8,10 +8,10 @@ import (
 	openaisdk "github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
 
-	"github.com/katasec/forge-core"
+	"github.com/katasec/kiln"
 )
 
-// OpenAIProvider implements forge.Provider using the OpenAI Responses API.
+// OpenAIProvider implements kiln.Provider using the OpenAI Responses API.
 type OpenAIProvider struct {
 	baseURL   string
 	apiKey    string
@@ -36,8 +36,8 @@ func New(apiKey string, model Model, opts ...Option) *OpenAIProvider {
 }
 
 // Capabilities describes the OpenAI provider features Forge currently supports.
-func (p *OpenAIProvider) Capabilities() forge.Capabilities {
-	return forge.Capabilities{
+func (p *OpenAIProvider) Capabilities() kiln.Capabilities {
+	return kiln.Capabilities{
 		Tools:      true,
 		Images:     true,
 		Usage:      true,
@@ -46,7 +46,7 @@ func (p *OpenAIProvider) Capabilities() forge.Capabilities {
 }
 
 // Generate sends a request to the OpenAI Responses API.
-func (p *OpenAIProvider) Generate(ctx context.Context, req forge.ProviderRequest) (*forge.ProviderResponse, error) {
+func (p *OpenAIProvider) Generate(ctx context.Context, req kiln.ProviderRequest) (*kiln.ProviderResponse, error) {
 	apiReq, err := p.buildRequest(req)
 	if err != nil {
 		return nil, err

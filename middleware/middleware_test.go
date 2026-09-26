@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/katasec/forge-core/message"
-	"github.com/katasec/forge-core/provider"
+	"github.com/katasec/kiln/message"
+	"github.com/katasec/kiln/provider"
 )
 
 func TestSingleMiddleware(t *testing.T) {

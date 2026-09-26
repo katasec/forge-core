@@ -1,9 +1,9 @@
-package forge
+package kiln
 
 import (
 	"context"
 
-	"github.com/katasec/forge-core/internal/runtime"
+	"github.com/katasec/kiln/internal/runtime"
 )
 
 // Agent orchestrates the LLM call -> tool execution -> response loop.

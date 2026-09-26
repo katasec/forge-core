@@ -5,13 +5,13 @@ import (
 
 	anthropicsdk "github.com/anthropics/anthropic-sdk-go"
 
-	"github.com/katasec/forge-core"
-	"github.com/katasec/forge-core/message"
-	"github.com/katasec/forge-core/tool"
+	"github.com/katasec/kiln"
+	"github.com/katasec/kiln/message"
+	"github.com/katasec/kiln/tool"
 )
 
 // buildRequest adapts a Forge provider request into Anthropic Messages parameters.
-func (p *AnthropicProvider) buildRequest(req forge.ProviderRequest) anthropicsdk.MessageNewParams {
+func (p *AnthropicProvider) buildRequest(req kiln.ProviderRequest) anthropicsdk.MessageNewParams {
 	return anthropicsdk.MessageNewParams{
 		Model:     anthropicsdk.Model(p.model),
 		MaxTokens: int64(p.maxTokens),
@@ -30,7 +30,7 @@ func systemPrompt(prompt string) []anthropicsdk.TextBlockParam {
 }
 
 // toAnthropicTools converts Forge tool definitions into Anthropic tool params.
-func toAnthropicTools(defs []forge.ToolDefinition) []anthropicsdk.ToolUnionParam {
+func toAnthropicTools(defs []kiln.ToolDefinition) []anthropicsdk.ToolUnionParam {
 	if len(defs) == 0 {
 		return nil
 	}
@@ -52,10 +52,10 @@ func toAnthropicTools(defs []forge.ToolDefinition) []anthropicsdk.ToolUnionParam
 
 // toAnthropicMessages converts Forge conversation messages into Anthropic message params.
 // Messages that carry no renderable content are dropped: Anthropic rejects empty blocks.
-func toAnthropicMessages(messages []forge.Message) []anthropicsdk.MessageParam {
+func toAnthropicMessages(messages []kiln.Message) []anthropicsdk.MessageParam {
 	out := make([]anthropicsdk.MessageParam, 0, len(messages))
 	for _, m := range messages {
-		if m.Role == forge.RoleSystem {
+		if m.Role == kiln.RoleSystem {
 			continue
 		}
 		converted, ok := toAnthropicMessage(m)
@@ -69,15 +69,15 @@ func toAnthropicMessages(messages []forge.Message) []anthropicsdk.MessageParam {
 
 // toAnthropicMessage converts one Forge message into an Anthropic message param.
 // Tool results travel as user messages, which is the shape Anthropic expects.
-func toAnthropicMessage(msg forge.Message) (anthropicsdk.MessageParam, bool) {
+func toAnthropicMessage(msg kiln.Message) (anthropicsdk.MessageParam, bool) {
 	switch msg.Role {
-	case forge.RoleAssistant:
+	case kiln.RoleAssistant:
 		blocks := assistantBlocks(msg)
 		if len(blocks) == 0 {
 			return anthropicsdk.MessageParam{}, false
 		}
 		return anthropicsdk.NewAssistantMessage(blocks...), true
-	case forge.RoleTool:
+	case kiln.RoleTool:
 		blocks := toolResultBlocks(msg)
 		if len(blocks) == 0 {
 			return anthropicsdk.MessageParam{}, false
@@ -93,7 +93,7 @@ func toAnthropicMessage(msg forge.Message) (anthropicsdk.MessageParam, bool) {
 }
 
 // assistantBlocks renders assistant text and tool calls as Anthropic content blocks.
-func assistantBlocks(msg forge.Message) []anthropicsdk.ContentBlockParamUnion {
+func assistantBlocks(msg kiln.Message) []anthropicsdk.ContentBlockParamUnion {
 	var blocks []anthropicsdk.ContentBlockParamUnion
 	if text := msg.Text(); text != "" {
 		blocks = append(blocks, anthropicsdk.NewTextBlock(text))
@@ -105,7 +105,7 @@ func assistantBlocks(msg forge.Message) []anthropicsdk.ContentBlockParamUnion {
 }
 
 // toolResultBlocks renders tool results as Anthropic tool_result blocks.
-func toolResultBlocks(msg forge.Message) []anthropicsdk.ContentBlockParamUnion {
+func toolResultBlocks(msg kiln.Message) []anthropicsdk.ContentBlockParamUnion {
 	results := msg.ToolResults()
 	blocks := make([]anthropicsdk.ContentBlockParamUnion, 0, len(results))
 	for _, r := range results {
@@ -115,11 +115,11 @@ func toolResultBlocks(msg forge.Message) []anthropicsdk.ContentBlockParamUnion {
 }
 
 // providerResponse adapts an Anthropic message response into Forge's provider response.
-func providerResponse(apiResp *anthropicsdk.Message) *forge.ProviderResponse {
-	return &forge.ProviderResponse{
-		Messages:     []forge.Message{{Role: forge.RoleAssistant, Content: fromAnthropicContent(apiResp.Content)}},
+func providerResponse(apiResp *anthropicsdk.Message) *kiln.ProviderResponse {
+	return &kiln.ProviderResponse{
+		Messages:     []kiln.Message{{Role: kiln.RoleAssistant, Content: fromAnthropicContent(apiResp.Content)}},
 		FinishReason: finishReason(apiResp.StopReason),
-		Usage: forge.TokenUsage{
+		Usage: kiln.TokenUsage{
 			InputTokens:  int(apiResp.Usage.InputTokens),
 			OutputTokens: int(apiResp.Usage.OutputTokens),
 		},
@@ -127,8 +127,8 @@ func providerResponse(apiResp *anthropicsdk.Message) *forge.ProviderResponse {
 }
 
 // fromAnthropicContent converts Anthropic response blocks into Forge content blocks.
-func fromAnthropicContent(content []anthropicsdk.ContentBlockUnion) []forge.ContentBlock {
-	blocks := make([]forge.ContentBlock, 0, len(content))
+func fromAnthropicContent(content []anthropicsdk.ContentBlockUnion) []kiln.ContentBlock {
+	blocks := make([]kiln.ContentBlock, 0, len(content))
 	for _, c := range content {
 		switch c.Type {
 		case "text":
@@ -136,7 +136,7 @@ func fromAnthropicContent(content []anthropicsdk.ContentBlockUnion) []forge.Cont
 				blocks = append(blocks, message.Text(c.Text))
 			}
 		case "tool_use":
-			blocks = append(blocks, message.ToolCall(forge.ToolCall{
+			blocks = append(blocks, message.ToolCall(kiln.ToolCall{
 				ID:        c.ID,
 				Name:      c.Name,
 				Arguments: json.RawMessage(c.Input),
@@ -147,9 +147,9 @@ func fromAnthropicContent(content []anthropicsdk.ContentBlockUnion) []forge.Cont
 }
 
 // finishReason maps Anthropic stop reasons onto Forge finish reasons.
-func finishReason(stopReason anthropicsdk.StopReason) forge.FinishReason {
+func finishReason(stopReason anthropicsdk.StopReason) kiln.FinishReason {
 	if stopReason == anthropicsdk.StopReasonToolUse {
-		return forge.FinishReasonToolUse
+		return kiln.FinishReasonToolUse
 	}
-	return forge.FinishReasonStop
+	return kiln.FinishReasonStop
 }

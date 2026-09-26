@@ -3,7 +3,7 @@ package middleware
 import (
 	"context"
 
-	"github.com/katasec/forge-core/provider"
+	"github.com/katasec/kiln/provider"
 )
 
 // RunFunc is the signature for a single provider call, used by middleware.

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/katasec/forge-core/message"
+	"github.com/katasec/kiln/message"
 )
 
 func TestStoreLoadEmpty(t *testing.T) {

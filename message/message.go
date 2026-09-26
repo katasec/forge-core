@@ -3,7 +3,7 @@ package message
 import (
 	"strings"
 
-	"github.com/katasec/forge-core/tool"
+	"github.com/katasec/kiln/tool"
 )
 
 // Role identifies the sender of a message in a conversation.

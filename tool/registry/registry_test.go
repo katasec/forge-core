@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/katasec/forge-core/tool"
+	"github.com/katasec/kiln/tool"
 )
 
 func TestRegisterAndGet(t *testing.T) {

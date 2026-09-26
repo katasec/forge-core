@@ -8,12 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/katasec/forge-core"
-	"github.com/katasec/forge-core/message"
+	"github.com/katasec/kiln"
+	"github.com/katasec/kiln/message"
 )
 
-// Compile-time check that *OpenAIProvider satisfies forge.Provider.
-var _ forge.Provider = (*OpenAIProvider)(nil)
+// Compile-time check that *OpenAIProvider satisfies kiln.Provider.
+var _ kiln.Provider = (*OpenAIProvider)(nil)
 
 func TestNew(t *testing.T) {
 	p := New("test-key", ModelGPT54Nano)
@@ -88,9 +88,9 @@ func TestGenerate(t *testing.T) {
 
 	p := New("test-key", ModelGPT54Nano, WithBaseURL(srv.URL))
 
-	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
+	resp, err := p.Generate(context.Background(), kiln.ProviderRequest{
 		SystemPrompt: "You are helpful.",
-		Messages: []forge.Message{
+		Messages: []kiln.Message{
 			message.UserText("Hi"),
 		},
 	})
@@ -101,11 +101,11 @@ func TestGenerate(t *testing.T) {
 	if resp.Messages[0].Text() != "Hello!" {
 		t.Errorf("content = %q, want Hello!", resp.Messages[0].Text())
 	}
-	if resp.Messages[0].Role != forge.RoleAssistant {
-		t.Errorf("role = %q, want %q", resp.Messages[0].Role, forge.RoleAssistant)
+	if resp.Messages[0].Role != kiln.RoleAssistant {
+		t.Errorf("role = %q, want %q", resp.Messages[0].Role, kiln.RoleAssistant)
 	}
-	if resp.FinishReason != forge.FinishReasonStop {
-		t.Errorf("finishReason = %q, want %q", resp.FinishReason, forge.FinishReasonStop)
+	if resp.FinishReason != kiln.FinishReasonStop {
+		t.Errorf("finishReason = %q, want %q", resp.FinishReason, kiln.FinishReasonStop)
 	}
 	if resp.Usage.InputTokens != 8 || resp.Usage.OutputTokens != 3 || resp.Usage.TotalTokens != 11 {
 		t.Errorf("usage = %+v, want input 8 output 3 total 11", resp.Usage)
@@ -141,8 +141,8 @@ func TestGenerateWithImageURL(t *testing.T) {
 	defer srv.Close()
 
 	p := New("test-key", ModelGPT54Nano, WithBaseURL(srv.URL))
-	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{
+	resp, err := p.Generate(context.Background(), kiln.ProviderRequest{
+		Messages: []kiln.Message{
 			message.UserMessage(
 				message.Text("Describe this image."),
 				message.ImageURL("https://example.com/cat.png"),
@@ -167,8 +167,8 @@ func TestGenerateNoMessages(t *testing.T) {
 
 	p := New("test-key", ModelGPT54Nano, WithBaseURL(srv.URL))
 
-	_, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{message.UserText("Hi")},
+	_, err := p.Generate(context.Background(), kiln.ProviderRequest{
+		Messages: []kiln.Message{message.UserText("Hi")},
 	})
 	if err == nil {
 		t.Fatal("expected error for empty output")
@@ -184,8 +184,8 @@ func TestGenerateAPIError(t *testing.T) {
 
 	p := New("test-key", ModelGPT54Nano, WithBaseURL(srv.URL))
 
-	_, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{message.UserText("Hi")},
+	_, err := p.Generate(context.Background(), kiln.ProviderRequest{
+		Messages: []kiln.Message{message.UserText("Hi")},
 	})
 	if err == nil {
 		t.Fatal("expected error for 429 response")
@@ -262,12 +262,12 @@ func TestGenerateSendsToolsAndParsesFunctionCall(t *testing.T) {
 	defer srv.Close()
 
 	p := New("test-key", ModelGPT54Nano, WithBaseURL(srv.URL))
-	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{message.UserText("find something")},
-		Tools: []forge.ToolDefinition{{
+	resp, err := p.Generate(context.Background(), kiln.ProviderRequest{
+		Messages: []kiln.Message{message.UserText("find something")},
+		Tools: []kiln.ToolDefinition{{
 			Name:        "search",
 			Description: "Search the database",
-			Schema:      forge.ToolSchema{Parameters: json.RawMessage(`{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}`)},
+			Schema:      kiln.ToolSchema{Parameters: json.RawMessage(`{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}`)},
 		}},
 	})
 	if err != nil {
@@ -284,8 +284,8 @@ func TestGenerateSendsToolsAndParsesFunctionCall(t *testing.T) {
 		t.Errorf("parameters = %v, want a schema with properties", got.Tools[0].Parameters)
 	}
 
-	if resp.FinishReason != forge.FinishReasonToolUse {
-		t.Errorf("finish reason = %q, want %q", resp.FinishReason, forge.FinishReasonToolUse)
+	if resp.FinishReason != kiln.FinishReasonToolUse {
+		t.Errorf("finish reason = %q, want %q", resp.FinishReason, kiln.FinishReasonToolUse)
 	}
 	calls := resp.Messages[0].ToolCalls()
 	if len(calls) != 1 || calls[0].ID != "call_1" || calls[0].Name != "search" {
@@ -314,13 +314,13 @@ func TestGenerateSendsToolResults(t *testing.T) {
 	defer srv.Close()
 
 	p := New("test-key", ModelGPT54Nano, WithBaseURL(srv.URL))
-	_, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{
+	_, err := p.Generate(context.Background(), kiln.ProviderRequest{
+		Messages: []kiln.Message{
 			message.UserText("find something"),
-			{Role: forge.RoleAssistant, Content: []forge.ContentBlock{
-				message.ToolCall(forge.ToolCall{ID: "call_1", Name: "search", Arguments: json.RawMessage(`{"query":"go"}`)}),
+			{Role: kiln.RoleAssistant, Content: []kiln.ContentBlock{
+				message.ToolCall(kiln.ToolCall{ID: "call_1", Name: "search", Arguments: json.RawMessage(`{"query":"go"}`)}),
 			}},
-			message.ToolMessage(forge.ToolResult{CallID: "call_1", Content: "two results"}),
+			message.ToolMessage(kiln.ToolResult{CallID: "call_1", Content: "two results"}),
 		},
 	})
 	if err != nil {
@@ -387,8 +387,8 @@ func TestGenerateReplaysAssistantHistory(t *testing.T) {
 	defer srv.Close()
 
 	p := New("test-key", ModelGPT54Nano, WithBaseURL(srv.URL))
-	_, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{
+	_, err := p.Generate(context.Background(), kiln.ProviderRequest{
+		Messages: []kiln.Message{
 			message.UserText("who made you?"),
 			message.AssistantText("OpenAI made me."),
 			message.UserText("what is 21 + 21?"),

@@ -6,8 +6,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/katasec/forge-core/tool"
-	"github.com/katasec/forge-core/tool/registry"
+	"github.com/katasec/kiln/tool"
+	"github.com/katasec/kiln/tool/registry"
 )
 
 type addInput struct {

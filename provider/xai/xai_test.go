@@ -7,12 +7,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/katasec/forge-core"
-	"github.com/katasec/forge-core/message"
+	"github.com/katasec/kiln"
+	"github.com/katasec/kiln/message"
 )
 
-// Compile-time check that *XAIProvider satisfies forge.Provider.
-var _ forge.Provider = (*XAIProvider)(nil)
+// Compile-time check that *XAIProvider satisfies kiln.Provider.
+var _ kiln.Provider = (*XAIProvider)(nil)
 
 func TestNew(t *testing.T) {
 	p := New("test-key", ModelGrok3Mini)
@@ -104,9 +104,9 @@ func TestGenerate(t *testing.T) {
 	defer srv.Close()
 
 	p := New("test-key", ModelGrok3Mini, WithBaseURL(srv.URL))
-	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
+	resp, err := p.Generate(context.Background(), kiln.ProviderRequest{
 		SystemPrompt: "Be helpful.",
-		Messages: []forge.Message{
+		Messages: []kiln.Message{
 			message.UserText("Hi"),
 		},
 	})
@@ -117,10 +117,10 @@ func TestGenerate(t *testing.T) {
 	if resp.Messages[0].Text() != "Hello from Grok!" {
 		t.Errorf("content = %q", resp.Messages[0].Text())
 	}
-	if resp.Messages[0].Role != forge.RoleAssistant {
+	if resp.Messages[0].Role != kiln.RoleAssistant {
 		t.Errorf("role = %q", resp.Messages[0].Role)
 	}
-	if resp.FinishReason != forge.FinishReasonStop {
+	if resp.FinishReason != kiln.FinishReasonStop {
 		t.Errorf("finishReason = %q", resp.FinishReason)
 	}
 	if resp.Usage.InputTokens != 10 || resp.Usage.OutputTokens != 5 {
@@ -166,19 +166,19 @@ func TestGenerateWithFunctionCalls(t *testing.T) {
 	defer srv.Close()
 
 	p := New("key", ModelGrok3Mini, WithBaseURL(srv.URL))
-	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{message.UserText("Weather in SF?")},
-		Tools: []forge.ToolDefinition{{
+	resp, err := p.Generate(context.Background(), kiln.ProviderRequest{
+		Messages: []kiln.Message{message.UserText("Weather in SF?")},
+		Tools: []kiln.ToolDefinition{{
 			Name:        "get_weather",
 			Description: "Get weather",
-			Schema:      forge.ToolSchema{Parameters: json.RawMessage(`{"type":"object","properties":{"city":{"type":"string"}}}`)},
+			Schema:      kiln.ToolSchema{Parameters: json.RawMessage(`{"type":"object","properties":{"city":{"type":"string"}}}`)},
 		}},
 	})
 	if err != nil {
 		t.Fatalf("Generate: %v", err)
 	}
 
-	if resp.FinishReason != forge.FinishReasonToolUse {
+	if resp.FinishReason != kiln.FinishReasonToolUse {
 		t.Errorf("finishReason = %q, want tool_use", resp.FinishReason)
 	}
 	if len(resp.Messages[0].ToolCalls()) != 1 {
@@ -238,14 +238,14 @@ func TestGenerateWithToolResults(t *testing.T) {
 	defer srv.Close()
 
 	p := New("key", ModelGrok3Mini, WithBaseURL(srv.URL))
-	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{
+	resp, err := p.Generate(context.Background(), kiln.ProviderRequest{
+		Messages: []kiln.Message{
 			message.UserText("Weather in SF?"),
-			{Role: forge.RoleAssistant, Content: []forge.ContentBlock{
-				message.ToolCall(forge.ToolCall{ID: "call-1", Name: "get_weather", Arguments: json.RawMessage(`{"city":"SF"}`)}),
+			{Role: kiln.RoleAssistant, Content: []kiln.ContentBlock{
+				message.ToolCall(kiln.ToolCall{ID: "call-1", Name: "get_weather", Arguments: json.RawMessage(`{"city":"SF"}`)}),
 			}},
-			{Role: forge.RoleTool, Content: []forge.ContentBlock{
-				message.ToolResult(forge.ToolResult{CallID: "call-1", Content: "72°F"}),
+			{Role: kiln.RoleTool, Content: []kiln.ContentBlock{
+				message.ToolResult(kiln.ToolResult{CallID: "call-1", Content: "72°F"}),
 			}},
 		},
 	})
@@ -256,7 +256,7 @@ func TestGenerateWithToolResults(t *testing.T) {
 	if resp.Messages[0].Text() != "It's 72°F in SF." {
 		t.Errorf("content = %q", resp.Messages[0].Text())
 	}
-	if resp.FinishReason != forge.FinishReasonStop {
+	if resp.FinishReason != kiln.FinishReasonStop {
 		t.Errorf("finishReason = %q", resp.FinishReason)
 	}
 }
@@ -313,8 +313,8 @@ func TestGenerateWithWebSearch(t *testing.T) {
 		WithBaseURL(srv.URL),
 		WithWebSearch(AllowedDomains("reuters.com")),
 	)
-	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{message.UserText("Latest xAI news?")},
+	resp, err := p.Generate(context.Background(), kiln.ProviderRequest{
+		Messages: []kiln.Message{message.UserText("Latest xAI news?")},
 	})
 	if err != nil {
 		t.Fatalf("Generate: %v", err)
@@ -323,7 +323,7 @@ func TestGenerateWithWebSearch(t *testing.T) {
 	if resp.Messages[0].Text() != "According to Reuters, xAI launched..." {
 		t.Errorf("content = %q", resp.Messages[0].Text())
 	}
-	if resp.FinishReason != forge.FinishReasonStop {
+	if resp.FinishReason != kiln.FinishReasonStop {
 		t.Errorf("finishReason = %q", resp.FinishReason)
 	}
 
@@ -352,8 +352,8 @@ func TestGenerateAPIError(t *testing.T) {
 	defer srv.Close()
 
 	p := New("key", ModelGrok3Mini, WithBaseURL(srv.URL))
-	_, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{message.UserText("Hi")},
+	_, err := p.Generate(context.Background(), kiln.ProviderRequest{
+		Messages: []kiln.Message{message.UserText("Hi")},
 	})
 	if err == nil {
 		t.Fatal("expected error for 429 response")

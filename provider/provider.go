@@ -3,8 +3,8 @@ package provider
 import (
 	"context"
 
-	"github.com/katasec/forge-core/message"
-	"github.com/katasec/forge-core/tool"
+	"github.com/katasec/kiln/message"
+	"github.com/katasec/kiln/tool"
 )
 
 // FinishReason indicates why the agent loop terminated.

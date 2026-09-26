@@ -1,10 +1,10 @@
 package runtime
 
 import (
-	"github.com/katasec/forge-core/memory"
-	"github.com/katasec/forge-core/middleware"
-	"github.com/katasec/forge-core/provider"
-	"github.com/katasec/forge-core/tool"
+	"github.com/katasec/kiln/memory"
+	"github.com/katasec/kiln/middleware"
+	"github.com/katasec/kiln/provider"
+	"github.com/katasec/kiln/tool"
 )
 
 // Config holds the settings for creating an Agent.

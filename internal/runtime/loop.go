@@ -5,9 +5,9 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
-	"github.com/katasec/forge-core/message"
-	"github.com/katasec/forge-core/provider"
-	"github.com/katasec/forge-core/tool"
+	"github.com/katasec/kiln/message"
+	"github.com/katasec/kiln/provider"
+	"github.com/katasec/kiln/tool"
 )
 
 // Run executes the agent loop.

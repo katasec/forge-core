@@ -1,4 +1,4 @@
-package forge
+package kiln
 
 import (
 	"context"
@@ -6,9 +6,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/katasec/forge-core/memory/inmem"
-	"github.com/katasec/forge-core/message"
-	"github.com/katasec/forge-core/tool"
+	"github.com/katasec/kiln/memory/inmem"
+	"github.com/katasec/kiln/message"
+	"github.com/katasec/kiln/tool"
 )
 
 // mockProvider is a test double that returns pre-configured responses.

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/katasec/forge-core/skill"
+	"github.com/katasec/kiln/skill"
 )
 
 func TestRunLoadsContent(t *testing.T) {

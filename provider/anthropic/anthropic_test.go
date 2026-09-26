@@ -7,12 +7,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/katasec/forge-core"
-	"github.com/katasec/forge-core/message"
+	"github.com/katasec/kiln"
+	"github.com/katasec/kiln/message"
 )
 
-// Compile-time check that *AnthropicProvider satisfies forge.Provider.
-var _ forge.Provider = (*AnthropicProvider)(nil)
+// Compile-time check that *AnthropicProvider satisfies kiln.Provider.
+var _ kiln.Provider = (*AnthropicProvider)(nil)
 
 func TestNew(t *testing.T) {
 	p := New("test-key", ModelClaudeSonnet5)
@@ -67,9 +67,9 @@ func TestGenerate(t *testing.T) {
 
 	p := New("test-key", ModelClaudeSonnet5, WithBaseURL(srv.URL))
 
-	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
+	resp, err := p.Generate(context.Background(), kiln.ProviderRequest{
 		SystemPrompt: "You are helpful.",
-		Messages: []forge.Message{
+		Messages: []kiln.Message{
 			message.UserText("Hi"),
 		},
 	})
@@ -80,11 +80,11 @@ func TestGenerate(t *testing.T) {
 	if resp.Messages[0].Text() != "Hello!" {
 		t.Errorf("content = %q, want %q", resp.Messages[0].Text(), "Hello!")
 	}
-	if resp.Messages[0].Role != forge.RoleAssistant {
-		t.Errorf("role = %q, want %q", resp.Messages[0].Role, forge.RoleAssistant)
+	if resp.Messages[0].Role != kiln.RoleAssistant {
+		t.Errorf("role = %q, want %q", resp.Messages[0].Role, kiln.RoleAssistant)
 	}
-	if resp.FinishReason != forge.FinishReasonStop {
-		t.Errorf("finishReason = %q, want %q", resp.FinishReason, forge.FinishReasonStop)
+	if resp.FinishReason != kiln.FinishReasonStop {
+		t.Errorf("finishReason = %q, want %q", resp.FinishReason, kiln.FinishReasonStop)
 	}
 	if resp.Usage.InputTokens != 10 || resp.Usage.OutputTokens != 5 {
 		t.Errorf("usage = %+v, want {10, 5}", resp.Usage)
@@ -100,8 +100,8 @@ func TestGenerateAPIError(t *testing.T) {
 
 	p := New("bad-key", ModelClaudeSonnet5, WithBaseURL(srv.URL))
 
-	_, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{message.UserText("Hi")},
+	_, err := p.Generate(context.Background(), kiln.ProviderRequest{
+		Messages: []kiln.Message{message.UserText("Hi")},
 	})
 	if err == nil {
 		t.Fatal("expected error for 401 response")
@@ -154,12 +154,12 @@ func TestGenerateSendsToolsAndParsesToolUse(t *testing.T) {
 	defer srv.Close()
 
 	p := New("test-key", ModelClaudeSonnet5, WithBaseURL(srv.URL))
-	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{message.UserText("find something")},
-		Tools: []forge.ToolDefinition{{
+	resp, err := p.Generate(context.Background(), kiln.ProviderRequest{
+		Messages: []kiln.Message{message.UserText("find something")},
+		Tools: []kiln.ToolDefinition{{
 			Name:        "search",
 			Description: "Search the database",
-			Schema:      forge.ToolSchema{Parameters: json.RawMessage(`{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}`)},
+			Schema:      kiln.ToolSchema{Parameters: json.RawMessage(`{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}`)},
 		}},
 	})
 	if err != nil {
@@ -176,8 +176,8 @@ func TestGenerateSendsToolsAndParsesToolUse(t *testing.T) {
 		t.Errorf("input_schema properties = %v, want 'query'", got.Tools[0].InputSchema.Properties)
 	}
 
-	if resp.FinishReason != forge.FinishReasonToolUse {
-		t.Errorf("finish reason = %q, want %q", resp.FinishReason, forge.FinishReasonToolUse)
+	if resp.FinishReason != kiln.FinishReasonToolUse {
+		t.Errorf("finish reason = %q, want %q", resp.FinishReason, kiln.FinishReasonToolUse)
 	}
 	calls := resp.Messages[0].ToolCalls()
 	if len(calls) != 1 {
@@ -208,13 +208,13 @@ func TestGenerateSendsToolResults(t *testing.T) {
 	defer srv.Close()
 
 	p := New("test-key", ModelClaudeSonnet5, WithBaseURL(srv.URL))
-	_, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{
+	_, err := p.Generate(context.Background(), kiln.ProviderRequest{
+		Messages: []kiln.Message{
 			message.UserText("find something"),
-			{Role: forge.RoleAssistant, Content: []forge.ContentBlock{
-				message.ToolCall(forge.ToolCall{ID: "toolu_1", Name: "search", Arguments: json.RawMessage(`{"query":"go"}`)}),
+			{Role: kiln.RoleAssistant, Content: []kiln.ContentBlock{
+				message.ToolCall(kiln.ToolCall{ID: "toolu_1", Name: "search", Arguments: json.RawMessage(`{"query":"go"}`)}),
 			}},
-			message.ToolMessage(forge.ToolResult{CallID: "toolu_1", Content: "two results"}),
+			message.ToolMessage(kiln.ToolResult{CallID: "toolu_1", Content: "two results"}),
 		},
 	})
 	if err != nil {
@@ -268,8 +268,8 @@ func TestMaxTokensReachesTheWire(t *testing.T) {
 	defer srv.Close()
 
 	p := New("test-key", ModelClaudeSonnet5, WithBaseURL(srv.URL), WithMaxTokens(2048))
-	if _, err := p.Generate(context.Background(), forge.ProviderRequest{
-		Messages: []forge.Message{message.UserText("hi")},
+	if _, err := p.Generate(context.Background(), kiln.ProviderRequest{
+		Messages: []kiln.Message{message.UserText("hi")},
 	}); err != nil {
 		t.Fatalf("Generate: %v", err)
 	}

@@ -1,13 +1,13 @@
-# forge-core
+# kiln
 
 A provider-agnostic Go library for building AI agent loops with pluggable tools, memory, and middleware.
 
-Forge Core handles the **LLM call -> tool execution -> response** cycle. You supply a provider, register tools, and forge runs the loop, including error handling, iteration limits, and conversation memory.
+Kiln handles the **LLM call -> tool execution -> response** cycle. You supply a provider, register tools, and kiln runs the loop, including error handling, iteration limits, and conversation memory.
 
 ## Install
 
 ```bash
-go get github.com/katasec/forge-core@v0.4.0
+go get github.com/katasec/kiln@v0.4.0
 ```
 
 ## Quick Start
@@ -25,14 +25,14 @@ import (
     "log"
     "os"
 
-    "github.com/katasec/forge-core"
-    "github.com/katasec/forge-core/provider/xai"
+    "github.com/katasec/kiln"
+    "github.com/katasec/kiln/provider/xai"
 )
 
 func main() {
     provider := xai.New(os.Getenv("XAI_API_KEY"), xai.ModelGrok4FastNonReasoning)
 
-    agent, err := forge.NewAgent(forge.Config{
+    agent, err := kiln.NewAgent(kiln.Config{
         Provider:     provider,
         SystemPrompt: "You are a helpful assistant. Keep responses brief.",
     })
@@ -57,7 +57,7 @@ provider := xai.New(
     xai.ModelGrok4FastNonReasoning,
     xai.WithWebSearch(),
 )
-agent, err := forge.NewAgent(forge.Config{Provider: provider})
+agent, err := kiln.NewAgent(kiln.Config{Provider: provider})
 if err != nil {
     log.Fatal(err)
 }
@@ -75,7 +75,7 @@ for _, c := range provider.LastCitations() {
 Use OpenAI by changing the provider import and constructor:
 
 ```go
-import "github.com/katasec/forge-core/provider/openai"
+import "github.com/katasec/kiln/provider/openai"
 
 provider := openai.New(os.Getenv("OPENAI_API_KEY"), openai.ModelGPT54Nano)
 ```
@@ -86,7 +86,7 @@ The `openai` package uses the OpenAI Responses API, including text and image con
 
 ### Provider
 
-The `Provider` interface makes a single LLM call. Forge includes first-class xAI and OpenAI providers, or you can implement your own:
+The `Provider` interface makes a single LLM call. Kiln includes first-class xAI and OpenAI providers, or you can implement your own:
 
 ```go
 type Provider interface {
@@ -99,7 +99,7 @@ type Provider interface {
 Define tools with `Func[Input, Output]`. The JSON schema for parameters is derived from the input struct at construction time using [invopop/jsonschema](https://github.com/invopop/jsonschema). String and byte-slice outputs are returned as-is; other outputs are encoded as JSON before being sent back to the model.
 
 ```go
-import "github.com/katasec/forge-core/tool"
+import "github.com/katasec/kiln/tool"
 
 type SearchInput struct {
     Query string `json:"query" jsonschema:"description=Search query"`
@@ -120,9 +120,9 @@ func search(ctx context.Context, in SearchInput) (SearchResult, error) {
     }, nil
 }
 
-agent, err := forge.NewAgent(forge.Config{
+agent, err := kiln.NewAgent(kiln.Config{
     Provider: provider,
-    Tools: []forge.Tool{
+    Tools: []kiln.Tool{
         tool.Func[SearchInput, SearchResult]("search", "Search the database", search),
     },
 })
@@ -160,7 +160,7 @@ fmt.Println(resp.LastText())
 For multimodal input, use `AskContent`:
 
 ```go
-import "github.com/katasec/forge-core/message"
+import "github.com/katasec/kiln/message"
 
 resp, err := agent.AskContent(ctx,
     message.Text("Describe this image."),
@@ -189,8 +189,8 @@ Controls what happens when a tool returns an error:
 Intercept provider calls for logging, retries, rate limiting, etc:
 
 ```go
-logging := forge.Middleware(func(next forge.RunFunc) forge.RunFunc {
-    return func(ctx context.Context, req forge.ProviderRequest) (*forge.ProviderResponse, error) {
+logging := kiln.Middleware(func(next kiln.RunFunc) kiln.RunFunc {
+    return func(ctx context.Context, req kiln.ProviderRequest) (*kiln.ProviderResponse, error) {
         log.Printf("calling provider with %d messages", len(req.Messages))
         resp, err := next(ctx, req)
         if err == nil {
@@ -200,9 +200,9 @@ logging := forge.Middleware(func(next forge.RunFunc) forge.RunFunc {
     }
 })
 
-agent, _ := forge.NewAgent(forge.Config{
+agent, _ := kiln.NewAgent(kiln.Config{
     Provider:   myProvider,
-    Middleware: []forge.Middleware{logging},
+    Middleware: []kiln.Middleware{logging},
 })
 ```
 
@@ -210,10 +210,10 @@ Middleware composes as decorators: given `[A, B, C]`, request flows `A -> B -> C
 
 ### Memory
 
-Forge uses in-memory conversation history by default. Repeated `Ask` calls on the same agent continue the same default conversation:
+Kiln uses in-memory conversation history by default. Repeated `Ask` calls on the same agent continue the same default conversation:
 
 ```go
-agent, _ := forge.NewAgent(forge.Config{
+agent, _ := kiln.NewAgent(kiln.Config{
     Provider: myProvider,
 })
 
@@ -231,7 +231,7 @@ resp, _ = agent.AskIn(ctx, "conv-1", "What did I just say?")
 Disable memory explicitly for stateless agents:
 
 ```go
-agent, _ := forge.NewAgent(forge.Config{
+agent, _ := kiln.NewAgent(kiln.Config{
     Provider:      myProvider,
     DisableMemory: true,
 })
@@ -250,9 +250,9 @@ type MemoryStore interface {
 Or opt into a supplied memory implementation explicitly:
 
 ```go
-import "github.com/katasec/forge-core/memory/inmem"
+import "github.com/katasec/kiln/memory/inmem"
 
-agent, _ := forge.NewAgent(forge.Config{
+agent, _ := kiln.NewAgent(kiln.Config{
     Provider: myProvider,
     Memory:   inmem.New(),
 })

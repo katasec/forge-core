@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	forge "github.com/katasec/forge-core"
-	"github.com/katasec/forge-core/provider/anthropic"
-	"github.com/katasec/forge-core/tool"
+	"github.com/katasec/kiln"
+	"github.com/katasec/kiln/provider/anthropic"
+	"github.com/katasec/kiln/tool"
 )
 
 type addInput struct {
@@ -91,9 +91,9 @@ func TestAnthropicToolLoopEndToEnd(t *testing.T) {
 			return in.A + in.B, nil
 		})
 
-	agent, err := forge.NewAgent(forge.Config{
+	agent, err := kiln.NewAgent(kiln.Config{
 		Provider:      anthropic.New("test-key", anthropic.ModelClaudeSonnet5, anthropic.WithBaseURL(srv.URL)),
-		Tools:         []forge.Tool{add},
+		Tools:         []kiln.Tool{add},
 		MaxIterations: 5,
 	})
 	if err != nil {

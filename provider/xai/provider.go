@@ -1,4 +1,4 @@
-// Package xai implements forge.Provider using the xAI Responses API.
+// Package xai implements kiln.Provider using the xAI Responses API.
 //
 // This provider supports the modern xAI Responses API with built-in
 // server-side tools (web search, X search) and native function calling.
@@ -16,10 +16,10 @@ import (
 	openaisdk "github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
 
-	"github.com/katasec/forge-core"
+	"github.com/katasec/kiln"
 )
 
-// XAIProvider implements forge.Provider using the xAI Responses API.
+// XAIProvider implements kiln.Provider using the xAI Responses API.
 type XAIProvider struct {
 	baseURL string
 	apiKey  string
@@ -48,8 +48,8 @@ func New(apiKey string, model Model, opts ...Option) *XAIProvider {
 }
 
 // Capabilities describes the xAI provider features Forge currently supports.
-func (p *XAIProvider) Capabilities() forge.Capabilities {
-	return forge.Capabilities{
+func (p *XAIProvider) Capabilities() kiln.Capabilities {
+	return kiln.Capabilities{
 		Tools:      true,
 		Usage:      true,
 		Production: true,
@@ -64,7 +64,7 @@ func (p *XAIProvider) LastCitations() []Citation {
 }
 
 // Generate sends a request to the xAI Responses API.
-func (p *XAIProvider) Generate(ctx context.Context, req forge.ProviderRequest) (*forge.ProviderResponse, error) {
+func (p *XAIProvider) Generate(ctx context.Context, req kiln.ProviderRequest) (*kiln.ProviderResponse, error) {
 	apiReq, err := p.buildRequest(req)
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func (p *XAIProvider) Generate(ctx context.Context, req forge.ProviderRequest) (
 }
 
 // requestTools combines provider-level xAI tools with request-level function tools.
-func (p *XAIProvider) requestTools(defs []forge.ToolDefinition) []requestTool {
+func (p *XAIProvider) requestTools(defs []kiln.ToolDefinition) []requestTool {
 	var tools []requestTool
 	tools = append(tools, p.tools...)
 	if len(defs) > 0 {

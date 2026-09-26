@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/katasec/forge-core/skill"
-	"github.com/katasec/forge-core/skill/markdown"
+	"github.com/katasec/kiln/skill"
+	"github.com/katasec/kiln/skill/markdown"
 )
 
 const packageRoot = "testdata/simple-agent"

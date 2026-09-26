@@ -3,7 +3,7 @@ package memory
 import (
 	"context"
 
-	"github.com/katasec/forge-core/message"
+	"github.com/katasec/kiln/message"
 )
 
 // Store persists conversation message history.

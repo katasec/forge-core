@@ -10,13 +10,13 @@ import (
 	"github.com/openai/openai-go/v3/responses"
 	"github.com/openai/openai-go/v3/shared"
 
-	"github.com/katasec/forge-core"
-	"github.com/katasec/forge-core/message"
-	"github.com/katasec/forge-core/tool"
+	"github.com/katasec/kiln"
+	"github.com/katasec/kiln/message"
+	"github.com/katasec/kiln/tool"
 )
 
 // buildRequest adapts a Forge provider request into OpenAI Responses parameters.
-func (p *OpenAIProvider) buildRequest(req forge.ProviderRequest) (responses.ResponseNewParams, error) {
+func (p *OpenAIProvider) buildRequest(req kiln.ProviderRequest) (responses.ResponseNewParams, error) {
 	input, err := toOpenAIMessages(req.Messages)
 	if err != nil {
 		return responses.ResponseNewParams{}, err
@@ -34,7 +34,7 @@ func (p *OpenAIProvider) buildRequest(req forge.ProviderRequest) (responses.Resp
 // toOpenAITools converts Forge tool definitions into OpenAI function tools.
 // Strict mode is left off: it imposes schema rules the reflected schemas do
 // not necessarily satisfy.
-func toOpenAITools(defs []forge.ToolDefinition) []responses.ToolUnionParam {
+func toOpenAITools(defs []kiln.ToolDefinition) []responses.ToolUnionParam {
 	if len(defs) == 0 {
 		return nil
 	}
@@ -51,16 +51,16 @@ func toOpenAITools(defs []forge.ToolDefinition) []responses.ToolUnionParam {
 }
 
 // providerResponse adapts an OpenAI Responses result into Forge's provider response.
-func providerResponse(apiResp *responses.Response) (*forge.ProviderResponse, error) {
+func providerResponse(apiResp *responses.Response) (*kiln.ProviderResponse, error) {
 	blocks := fromOpenAIOutput(apiResp)
 	if len(blocks) == 0 {
 		return nil, fmt.Errorf("no assistant messages in response")
 	}
 
-	return &forge.ProviderResponse{
-		Messages:     []forge.Message{{Role: forge.RoleAssistant, Content: blocks}},
+	return &kiln.ProviderResponse{
+		Messages:     []kiln.Message{{Role: kiln.RoleAssistant, Content: blocks}},
 		FinishReason: finishReason(blocks),
-		Usage: forge.TokenUsage{
+		Usage: kiln.TokenUsage{
 			InputTokens:           int(apiResp.Usage.InputTokens),
 			CachedInputTokens:     int(apiResp.Usage.InputTokensDetails.CachedTokens),
 			OutputTokens:          int(apiResp.Usage.OutputTokens),
@@ -71,10 +71,10 @@ func providerResponse(apiResp *responses.Response) (*forge.ProviderResponse, err
 }
 
 // toOpenAIMessages converts Forge conversation messages into OpenAI response input items.
-func toOpenAIMessages(messages []forge.Message) (responses.ResponseInputParam, error) {
+func toOpenAIMessages(messages []kiln.Message) (responses.ResponseInputParam, error) {
 	items := make(responses.ResponseInputParam, 0, len(messages))
 	for _, msg := range messages {
-		if msg.Role == forge.RoleSystem {
+		if msg.Role == kiln.RoleSystem {
 			continue
 		}
 
@@ -90,7 +90,7 @@ func toOpenAIMessages(messages []forge.Message) (responses.ResponseInputParam, e
 // toOpenAIMessage converts one Forge message into OpenAI response input items.
 // Tool calls and tool results are separate items in the Responses API, so a
 // single Forge message can expand into several.
-func toOpenAIMessage(msg forge.Message) ([]responses.ResponseInputItemUnionParam, error) {
+func toOpenAIMessage(msg kiln.Message) ([]responses.ResponseInputItemUnionParam, error) {
 	if results := msg.ToolResults(); len(results) > 0 {
 		return toOpenAIToolResults(results), nil
 	}
@@ -101,7 +101,7 @@ func toOpenAIMessage(msg forge.Message) ([]responses.ResponseInputItemUnionParam
 	// An assistant turn replayed from memory must carry output_text, not the
 	// input_text parts a user turn uses: OpenAI rejects input_text on an
 	// assistant message. The plain-string form lets the API pick the right one.
-	if msg.Role == forge.RoleAssistant {
+	if msg.Role == kiln.RoleAssistant {
 		return []responses.ResponseInputItemUnionParam{
 			responses.ResponseInputItemParamOfMessage(msg.Text(), responses.EasyInputMessageRole(msg.Role)),
 		}, nil
@@ -117,7 +117,7 @@ func toOpenAIMessage(msg forge.Message) ([]responses.ResponseInputItemUnionParam
 }
 
 // toOpenAIToolCalls renders assistant text plus its function calls as items.
-func toOpenAIToolCalls(msg forge.Message, calls []forge.ToolCall) []responses.ResponseInputItemUnionParam {
+func toOpenAIToolCalls(msg kiln.Message, calls []kiln.ToolCall) []responses.ResponseInputItemUnionParam {
 	items := make([]responses.ResponseInputItemUnionParam, 0, len(calls)+1)
 	if text := msg.Text(); text != "" {
 		items = append(items, responses.ResponseInputItemParamOfMessage(text, responses.EasyInputMessageRole(msg.Role)))
@@ -129,7 +129,7 @@ func toOpenAIToolCalls(msg forge.Message, calls []forge.ToolCall) []responses.Re
 }
 
 // toOpenAIToolResults renders tool results as function call output items.
-func toOpenAIToolResults(results []forge.ToolResult) []responses.ResponseInputItemUnionParam {
+func toOpenAIToolResults(results []kiln.ToolResult) []responses.ResponseInputItemUnionParam {
 	items := make([]responses.ResponseInputItemUnionParam, 0, len(results))
 	for _, r := range results {
 		item := responses.ResponseInputItemParamOfFunctionCallOutput(r.Content)
@@ -140,8 +140,8 @@ func toOpenAIToolResults(results []forge.ToolResult) []responses.ResponseInputIt
 }
 
 // fromOpenAIOutput converts OpenAI output items into Forge content blocks.
-func fromOpenAIOutput(apiResp *responses.Response) []forge.ContentBlock {
-	var blocks []forge.ContentBlock
+func fromOpenAIOutput(apiResp *responses.Response) []kiln.ContentBlock {
+	var blocks []kiln.ContentBlock
 	if text := apiResp.OutputText(); text != "" {
 		blocks = append(blocks, message.Text(text))
 	}
@@ -149,7 +149,7 @@ func fromOpenAIOutput(apiResp *responses.Response) []forge.ContentBlock {
 		if item.Type != "function_call" {
 			continue
 		}
-		blocks = append(blocks, message.ToolCall(forge.ToolCall{
+		blocks = append(blocks, message.ToolCall(kiln.ToolCall{
 			ID:        item.CallID,
 			Name:      item.Name,
 			Arguments: json.RawMessage(item.Arguments.OfString),
@@ -159,17 +159,17 @@ func fromOpenAIOutput(apiResp *responses.Response) []forge.ContentBlock {
 }
 
 // finishReason reports tool use when the model asked for at least one call.
-func finishReason(blocks []forge.ContentBlock) forge.FinishReason {
+func finishReason(blocks []kiln.ContentBlock) kiln.FinishReason {
 	for _, b := range blocks {
-		if b.Type == forge.ContentTypeToolCall {
-			return forge.FinishReasonToolUse
+		if b.Type == kiln.ContentTypeToolCall {
+			return kiln.FinishReasonToolUse
 		}
 	}
-	return forge.FinishReasonStop
+	return kiln.FinishReasonStop
 }
 
 // toOpenAIContent converts Forge content blocks into OpenAI message content parts.
-func toOpenAIContent(role forge.Role, blocks []forge.ContentBlock) (responses.ResponseInputMessageContentListParam, error) {
+func toOpenAIContent(role kiln.Role, blocks []kiln.ContentBlock) (responses.ResponseInputMessageContentListParam, error) {
 	content := make(responses.ResponseInputMessageContentListParam, 0, len(blocks))
 	for _, block := range blocks {
 		converted, err := toOpenAIContentBlock(role, block)
@@ -182,13 +182,13 @@ func toOpenAIContent(role forge.Role, blocks []forge.ContentBlock) (responses.Re
 }
 
 // toOpenAIContentBlock converts one Forge content block into an OpenAI content part.
-func toOpenAIContentBlock(role forge.Role, block forge.ContentBlock) (responses.ResponseInputContentUnionParam, error) {
+func toOpenAIContentBlock(role kiln.Role, block kiln.ContentBlock) (responses.ResponseInputContentUnionParam, error) {
 	switch block.Type {
-	case forge.ContentTypeText:
+	case kiln.ContentTypeText:
 		return toOpenAITextContent(role, block.Text), nil
-	case forge.ContentTypeImage:
+	case kiln.ContentTypeImage:
 		return toOpenAIImageContent(role, block)
-	case forge.ContentTypeToolCall, forge.ContentTypeToolResult:
+	case kiln.ContentTypeToolCall, kiln.ContentTypeToolResult:
 		return responses.ResponseInputContentUnionParam{}, fmt.Errorf("tool content must be converted as its own input item, not as message content")
 	default:
 		return responses.ResponseInputContentUnionParam{}, fmt.Errorf("unsupported content block type: %s", block.Type)
@@ -196,13 +196,13 @@ func toOpenAIContentBlock(role forge.Role, block forge.ContentBlock) (responses.
 }
 
 // toOpenAITextContent wraps text as an OpenAI input text content part.
-func toOpenAITextContent(_ forge.Role, text string) responses.ResponseInputContentUnionParam {
+func toOpenAITextContent(_ kiln.Role, text string) responses.ResponseInputContentUnionParam {
 	return responses.ResponseInputContentParamOfInputText(text)
 }
 
 // toOpenAIImageContent wraps Forge image content as an OpenAI input image content part.
-func toOpenAIImageContent(role forge.Role, block forge.ContentBlock) (responses.ResponseInputContentUnionParam, error) {
-	if role != forge.RoleUser {
+func toOpenAIImageContent(role kiln.Role, block kiln.ContentBlock) (responses.ResponseInputContentUnionParam, error) {
+	if role != kiln.RoleUser {
 		return responses.ResponseInputContentUnionParam{}, fmt.Errorf("openai image content is only supported for user messages")
 	}
 	if block.Image == nil {
@@ -222,7 +222,7 @@ func toOpenAIImageContent(role forge.Role, block forge.ContentBlock) (responses.
 }
 
 // openAIImageURL returns the URL or data URL OpenAI expects for image input.
-func openAIImageURL(image forge.ImageContent) (string, error) {
+func openAIImageURL(image kiln.ImageContent) (string, error) {
 	if image.URL != "" {
 		return image.URL, nil
 	}

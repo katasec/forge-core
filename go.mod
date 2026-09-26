@@ -1,4 +1,4 @@
-module github.com/katasec/forge-core
+module github.com/katasec/kiln
 
 go 1.25.6
 

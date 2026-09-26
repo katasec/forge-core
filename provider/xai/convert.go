@@ -8,12 +8,12 @@ import (
 	"github.com/openai/openai-go/v3/responses"
 	"github.com/openai/openai-go/v3/shared"
 
-	"github.com/katasec/forge-core"
-	"github.com/katasec/forge-core/message"
+	"github.com/katasec/kiln"
+	"github.com/katasec/kiln/message"
 )
 
 // buildRequest adapts a Forge provider request into xAI's OpenAI-compatible parameters.
-func (p *XAIProvider) buildRequest(req forge.ProviderRequest) (responses.ResponseNewParams, error) {
+func (p *XAIProvider) buildRequest(req kiln.ProviderRequest) (responses.ResponseNewParams, error) {
 	input, err := toXAIMessages(req.Messages)
 	if err != nil {
 		return responses.ResponseNewParams{}, err
@@ -32,11 +32,11 @@ func (p *XAIProvider) buildRequest(req forge.ProviderRequest) (responses.Respons
 }
 
 // toXAIMessages converts Forge conversation messages into xAI response input items.
-func toXAIMessages(msgs []forge.Message) (responses.ResponseInputParam, error) {
+func toXAIMessages(msgs []kiln.Message) (responses.ResponseInputParam, error) {
 	var items responses.ResponseInputParam
 
 	for _, m := range msgs {
-		if m.Role == forge.RoleSystem {
+		if m.Role == kiln.RoleSystem {
 			continue
 		}
 		converted, err := toXAIMessage(m)
@@ -49,8 +49,8 @@ func toXAIMessages(msgs []forge.Message) (responses.ResponseInputParam, error) {
 }
 
 // toXAIMessage converts one Forge message into xAI response input items.
-func toXAIMessage(m forge.Message) ([]responses.ResponseInputItemUnionParam, error) {
-	if m.Role == forge.RoleTool && len(m.ToolResults()) > 0 {
+func toXAIMessage(m kiln.Message) ([]responses.ResponseInputItemUnionParam, error) {
+	if m.Role == kiln.RoleTool && len(m.ToolResults()) > 0 {
 		return toXAIToolResults(m.ToolResults()), nil
 	}
 	if len(m.ToolCalls()) > 0 {
@@ -63,7 +63,7 @@ func toXAIMessage(m forge.Message) ([]responses.ResponseInputItemUnionParam, err
 }
 
 // toXAIToolResults converts Forge tool results into xAI function call outputs.
-func toXAIToolResults(results []forge.ToolResult) []responses.ResponseInputItemUnionParam {
+func toXAIToolResults(results []kiln.ToolResult) []responses.ResponseInputItemUnionParam {
 	items := make([]responses.ResponseInputItemUnionParam, 0, len(results))
 	for _, tr := range results {
 		item := responses.ResponseInputItemParamOfFunctionCallOutput(tr.Content)
@@ -74,7 +74,7 @@ func toXAIToolResults(results []forge.ToolResult) []responses.ResponseInputItemU
 }
 
 // toXAITools converts Forge tool definitions into xAI request tools.
-func toXAITools(defs []forge.ToolDefinition) []requestTool {
+func toXAITools(defs []kiln.ToolDefinition) []requestTool {
 	tools := make([]requestTool, 0, len(defs))
 	for _, d := range defs {
 		tools = append(tools, requestTool{
@@ -88,10 +88,10 @@ func toXAITools(defs []forge.ToolDefinition) []requestTool {
 }
 
 // providerResponse adapts an xAI response into Forge's provider response and citations.
-func providerResponse(resp *response) (*forge.ProviderResponse, []Citation) {
+func providerResponse(resp *response) (*kiln.ProviderResponse, []Citation) {
 	content, toolCalls, citations := fromXAIOutput(resp.Output)
 
-	blocks := []forge.ContentBlock{}
+	blocks := []kiln.ContentBlock{}
 	if content != "" {
 		blocks = append(blocks, message.Text(content))
 	}
@@ -99,10 +99,10 @@ func providerResponse(resp *response) (*forge.ProviderResponse, []Citation) {
 		blocks = append(blocks, message.ToolCall(call))
 	}
 
-	return &forge.ProviderResponse{
-		Messages:     []forge.Message{{Role: forge.RoleAssistant, Content: blocks}},
+	return &kiln.ProviderResponse{
+		Messages:     []kiln.Message{{Role: kiln.RoleAssistant, Content: blocks}},
 		FinishReason: finishReason(toolCalls),
-		Usage: forge.TokenUsage{
+		Usage: kiln.TokenUsage{
 			InputTokens:  resp.Usage.InputTokens,
 			OutputTokens: resp.Usage.OutputTokens,
 		},
@@ -110,15 +110,15 @@ func providerResponse(resp *response) (*forge.ProviderResponse, []Citation) {
 }
 
 // fromXAIOutput extracts text, function calls, and citations from xAI output items.
-func fromXAIOutput(output []outputItem) (string, []forge.ToolCall, []Citation) {
+func fromXAIOutput(output []outputItem) (string, []kiln.ToolCall, []Citation) {
 	var content string
-	var toolCalls []forge.ToolCall
+	var toolCalls []kiln.ToolCall
 	var citations []Citation
 
 	for _, item := range output {
 		switch item.Type {
 		case "function_call":
-			toolCalls = append(toolCalls, forge.ToolCall{
+			toolCalls = append(toolCalls, kiln.ToolCall{
 				ID:        item.CallID,
 				Name:      item.Name,
 				Arguments: json.RawMessage(item.Arguments),
@@ -165,9 +165,9 @@ func fromXAIAnnotations(annotations []annotation) []Citation {
 }
 
 // finishReason reports tool_use when the xAI response contains function calls.
-func finishReason(toolCalls []forge.ToolCall) forge.FinishReason {
+func finishReason(toolCalls []kiln.ToolCall) kiln.FinishReason {
 	if len(toolCalls) > 0 {
-		return forge.FinishReasonToolUse
+		return kiln.FinishReasonToolUse
 	}
-	return forge.FinishReasonStop
+	return kiln.FinishReasonStop
 }

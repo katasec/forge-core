@@ -1,4 +1,4 @@
-// Package anthropic implements forge.Provider using the Anthropic Messages API.
+// Package anthropic implements kiln.Provider using the Anthropic Messages API.
 package anthropic
 
 import (
@@ -8,7 +8,7 @@ import (
 	anthropicsdk "github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
 
-	"github.com/katasec/forge-core"
+	"github.com/katasec/kiln"
 )
 
 // defaultMaxTokens is the response cap used when WithMaxTokens is not supplied.
@@ -17,7 +17,7 @@ import (
 // Every model in this package's Model constants supports at least this much.
 const defaultMaxTokens = 16000
 
-// AnthropicProvider implements forge.Provider using the Anthropic Messages API.
+// AnthropicProvider implements kiln.Provider using the Anthropic Messages API.
 type AnthropicProvider struct {
 	baseURL   string
 	apiKey    string
@@ -44,8 +44,8 @@ func New(apiKey string, model Model, opts ...Option) *AnthropicProvider {
 }
 
 // Capabilities describes the Anthropic provider features Forge currently supports.
-func (p *AnthropicProvider) Capabilities() forge.Capabilities {
-	return forge.Capabilities{
+func (p *AnthropicProvider) Capabilities() kiln.Capabilities {
+	return kiln.Capabilities{
 		Tools:      true,
 		Usage:      true,
 		Production: true,
@@ -53,7 +53,7 @@ func (p *AnthropicProvider) Capabilities() forge.Capabilities {
 }
 
 // Generate sends a request to the Anthropic Messages API.
-func (p *AnthropicProvider) Generate(ctx context.Context, req forge.ProviderRequest) (*forge.ProviderResponse, error) {
+func (p *AnthropicProvider) Generate(ctx context.Context, req kiln.ProviderRequest) (*kiln.ProviderResponse, error) {
 	apiReq := p.buildRequest(req)
 
 	apiResp, err := p.sendRequest(ctx, apiReq)

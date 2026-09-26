@@ -1,6 +1,6 @@
 package registry
 
-import "github.com/katasec/forge-core/tool"
+import "github.com/katasec/kiln/tool"
 
 // Registry stores tools and provides lookup by name.
 type Registry struct {

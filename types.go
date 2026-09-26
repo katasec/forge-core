@@ -1,18 +1,18 @@
-package forge
+package kiln
 
 import (
-	"github.com/katasec/forge-core/executor"
-	"github.com/katasec/forge-core/executor/sequential"
-	"github.com/katasec/forge-core/internal/runtime"
-	"github.com/katasec/forge-core/memory"
-	"github.com/katasec/forge-core/memory/inmem"
-	"github.com/katasec/forge-core/message"
-	"github.com/katasec/forge-core/middleware"
-	"github.com/katasec/forge-core/provider"
-	"github.com/katasec/forge-core/skill"
-	"github.com/katasec/forge-core/skill/markdown"
-	"github.com/katasec/forge-core/tool"
-	"github.com/katasec/forge-core/tool/registry"
+	"github.com/katasec/kiln/executor"
+	"github.com/katasec/kiln/executor/sequential"
+	"github.com/katasec/kiln/internal/runtime"
+	"github.com/katasec/kiln/memory"
+	"github.com/katasec/kiln/memory/inmem"
+	"github.com/katasec/kiln/message"
+	"github.com/katasec/kiln/middleware"
+	"github.com/katasec/kiln/provider"
+	"github.com/katasec/kiln/skill"
+	"github.com/katasec/kiln/skill/markdown"
+	"github.com/katasec/kiln/tool"
+	"github.com/katasec/kiln/tool/registry"
 )
 
 type AgentRequest = runtime.AgentRequest

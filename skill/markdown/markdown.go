@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/katasec/forge-core/skill"
+	"github.com/katasec/kiln/skill"
 )
 
 // Runner loads context (markdown/text) skill assets. It is stateless and safe to

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/katasec/forge-core/tool"
-	"github.com/katasec/forge-core/tool/registry"
+	"github.com/katasec/kiln/tool"
+	"github.com/katasec/kiln/tool/registry"
 )
 
 // Executor invokes tools one at a time via a tool registry.

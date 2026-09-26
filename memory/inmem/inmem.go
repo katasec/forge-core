@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/katasec/forge-core/message"
+	"github.com/katasec/kiln/message"
 )
 
 // Store is a thread-safe in-memory memory store.

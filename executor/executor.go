@@ -3,7 +3,7 @@ package executor
 import (
 	"context"
 
-	"github.com/katasec/forge-core/tool"
+	"github.com/katasec/kiln/tool"
 )
 
 // Executor executes a batch of tool calls and returns the results.
