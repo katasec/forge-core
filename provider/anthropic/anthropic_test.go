@@ -132,3 +132,176 @@ type usageBlock struct {
 	InputTokens  int `json:"input_tokens"`
 	OutputTokens int `json:"output_tokens"`
 }
+
+// TestGenerateSendsToolsAndParsesToolUse covers the full tool round trip: the
+// definitions reach the wire, and a tool_use response becomes a Forge ToolCall.
+func TestGenerateSendsToolsAndParsesToolUse(t *testing.T) {
+	var got toolRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"id": "msg_test", "type": "message", "role": "assistant",
+			"model": "claude-sonnet-5", "stop_reason": "tool_use",
+			"content": []map[string]any{
+				{"type": "tool_use", "id": "toolu_1", "name": "search", "input": map[string]any{"query": "go"}},
+			},
+			"usage": map[string]any{"input_tokens": 10, "output_tokens": 5},
+		})
+	}))
+	defer srv.Close()
+
+	p := New("test-key", ModelClaudeSonnet5, WithBaseURL(srv.URL))
+	resp, err := p.Generate(context.Background(), forge.ProviderRequest{
+		Messages: []forge.Message{message.UserText("find something")},
+		Tools: []forge.ToolDefinition{{
+			Name:        "search",
+			Description: "Search the database",
+			Schema:      forge.ToolSchema{Parameters: json.RawMessage(`{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}`)},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+
+	if len(got.Tools) != 1 {
+		t.Fatalf("tools sent = %d, want 1", len(got.Tools))
+	}
+	if got.Tools[0].Name != "search" || got.Tools[0].Description != "Search the database" {
+		t.Errorf("tool = %+v, want name/description to survive", got.Tools[0])
+	}
+	if _, ok := got.Tools[0].InputSchema.Properties["query"]; !ok {
+		t.Errorf("input_schema properties = %v, want 'query'", got.Tools[0].InputSchema.Properties)
+	}
+
+	if resp.FinishReason != forge.FinishReasonToolUse {
+		t.Errorf("finish reason = %q, want %q", resp.FinishReason, forge.FinishReasonToolUse)
+	}
+	calls := resp.Messages[0].ToolCalls()
+	if len(calls) != 1 {
+		t.Fatalf("tool calls = %d, want 1", len(calls))
+	}
+	if calls[0].ID != "toolu_1" || calls[0].Name != "search" {
+		t.Errorf("call = %+v, want id toolu_1 name search", calls[0])
+	}
+	if string(calls[0].Arguments) != `{"query":"go"}` {
+		t.Errorf("arguments = %s, want {\"query\":\"go\"}", calls[0].Arguments)
+	}
+}
+
+// TestGenerateSendsToolResults checks tool results are replayed as a user
+// message carrying tool_result blocks, which is the shape Anthropic requires.
+func TestGenerateSendsToolResults(t *testing.T) {
+	var got toolRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&got)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"id": "m", "type": "message", "role": "assistant", "model": "claude-sonnet-5",
+			"stop_reason": "end_turn",
+			"content":     []map[string]any{{"type": "text", "text": "done"}},
+			"usage":       map[string]any{"input_tokens": 1, "output_tokens": 1},
+		})
+	}))
+	defer srv.Close()
+
+	p := New("test-key", ModelClaudeSonnet5, WithBaseURL(srv.URL))
+	_, err := p.Generate(context.Background(), forge.ProviderRequest{
+		Messages: []forge.Message{
+			message.UserText("find something"),
+			{Role: forge.RoleAssistant, Content: []forge.ContentBlock{
+				message.ToolCall(forge.ToolCall{ID: "toolu_1", Name: "search", Arguments: json.RawMessage(`{"query":"go"}`)}),
+			}},
+			message.ToolMessage(forge.ToolResult{CallID: "toolu_1", Content: "two results"}),
+		},
+	})
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+
+	if len(got.Messages) != 3 {
+		t.Fatalf("messages sent = %d, want 3", len(got.Messages))
+	}
+	assistant := got.Messages[1]
+	if assistant.Role != "assistant" || len(assistant.Content) != 1 || assistant.Content[0].Type != "tool_use" {
+		t.Errorf("assistant message = %+v, want a single tool_use block", assistant)
+	}
+	result := got.Messages[2]
+	if result.Role != "user" {
+		t.Errorf("tool result role = %q, want user", result.Role)
+	}
+	if len(result.Content) != 1 || result.Content[0].Type != "tool_result" {
+		t.Fatalf("tool result content = %+v, want one tool_result block", result.Content)
+	}
+	if result.Content[0].ToolUseID != "toolu_1" {
+		t.Errorf("tool_use_id = %q, want toolu_1", result.Content[0].ToolUseID)
+	}
+}
+
+func TestMaxTokensDefaultAndOverride(t *testing.T) {
+	if p := New("k", ModelClaudeSonnet5); p.maxTokens != defaultMaxTokens {
+		t.Errorf("default maxTokens = %d, want %d", p.maxTokens, defaultMaxTokens)
+	}
+	if p := New("k", ModelClaudeSonnet5, WithMaxTokens(64000)); p.maxTokens != 64000 {
+		t.Errorf("maxTokens = %d, want 64000", p.maxTokens)
+	}
+	// A non-positive value would make every request fail; it must be ignored.
+	if p := New("k", ModelClaudeSonnet5, WithMaxTokens(0)); p.maxTokens != defaultMaxTokens {
+		t.Errorf("maxTokens = %d, want default retained for zero", p.maxTokens)
+	}
+}
+
+func TestMaxTokensReachesTheWire(t *testing.T) {
+	var got toolRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&got)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"id": "m", "type": "message", "role": "assistant", "model": "claude-sonnet-5",
+			"stop_reason": "end_turn",
+			"content":     []map[string]any{{"type": "text", "text": "hi"}},
+			"usage":       map[string]any{"input_tokens": 1, "output_tokens": 1},
+		})
+	}))
+	defer srv.Close()
+
+	p := New("test-key", ModelClaudeSonnet5, WithBaseURL(srv.URL), WithMaxTokens(2048))
+	if _, err := p.Generate(context.Background(), forge.ProviderRequest{
+		Messages: []forge.Message{message.UserText("hi")},
+	}); err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+	if got.MaxTokens != 2048 {
+		t.Errorf("max_tokens = %d, want 2048", got.MaxTokens)
+	}
+}
+
+type toolRequest struct {
+	MaxTokens int               `json:"max_tokens"`
+	Tools     []wireTool        `json:"tools"`
+	Messages  []wireToolMessage `json:"messages"`
+}
+
+type wireTool struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	InputSchema struct {
+		Properties map[string]any `json:"properties"`
+		Required   []string       `json:"required"`
+	} `json:"input_schema"`
+}
+
+type wireToolMessage struct {
+	Role    string          `json:"role"`
+	Content []wireToolBlock `json:"content"`
+}
+
+type wireToolBlock struct {
+	Type      string `json:"type"`
+	Text      string `json:"text"`
+	ToolUseID string `json:"tool_use_id"`
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+}

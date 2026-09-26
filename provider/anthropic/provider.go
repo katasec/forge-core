@@ -11,11 +11,18 @@ import (
 	"github.com/katasec/forge-core"
 )
 
+// defaultMaxTokens is the response cap used when WithMaxTokens is not supplied.
+// Anthropic requires max_tokens on every request; 16k leaves room for long
+// answers while staying under the SDK's HTTP timeout for non-streaming calls.
+// Every model in this package's Model constants supports at least this much.
+const defaultMaxTokens = 16000
+
 // AnthropicProvider implements forge.Provider using the Anthropic Messages API.
 type AnthropicProvider struct {
 	baseURL   string
 	apiKey    string
 	model     Model
+	maxTokens int
 	client    *http.Client
 	sdkClient anthropicsdk.Client
 }
@@ -23,10 +30,11 @@ type AnthropicProvider struct {
 // New creates an Anthropic provider for the given API key and model.
 func New(apiKey string, model Model, opts ...Option) *AnthropicProvider {
 	p := &AnthropicProvider{
-		baseURL: "https://api.anthropic.com",
-		apiKey:  apiKey,
-		model:   model,
-		client:  &http.Client{},
+		baseURL:   "https://api.anthropic.com",
+		apiKey:    apiKey,
+		model:     model,
+		maxTokens: defaultMaxTokens,
+		client:    &http.Client{},
 	}
 	for _, opt := range opts {
 		opt(p)
@@ -38,6 +46,7 @@ func New(apiKey string, model Model, opts ...Option) *AnthropicProvider {
 // Capabilities describes the Anthropic provider features Forge currently supports.
 func (p *AnthropicProvider) Capabilities() forge.Capabilities {
 	return forge.Capabilities{
+		Tools:      true,
 		Usage:      true,
 		Production: true,
 	}
