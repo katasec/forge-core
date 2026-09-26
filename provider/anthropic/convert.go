@@ -10,7 +10,7 @@ import (
 	"github.com/katasec/kiln/tool"
 )
 
-// buildRequest adapts a Forge provider request into Anthropic Messages parameters.
+// buildRequest adapts a Kiln provider request into Anthropic Messages parameters.
 func (p *AnthropicProvider) buildRequest(req kiln.ProviderRequest) anthropicsdk.MessageNewParams {
 	return anthropicsdk.MessageNewParams{
 		Model:     anthropicsdk.Model(p.model),
@@ -29,7 +29,7 @@ func systemPrompt(prompt string) []anthropicsdk.TextBlockParam {
 	return []anthropicsdk.TextBlockParam{{Text: prompt}}
 }
 
-// toAnthropicTools converts Forge tool definitions into Anthropic tool params.
+// toAnthropicTools converts Kiln tool definitions into Anthropic tool params.
 func toAnthropicTools(defs []kiln.ToolDefinition) []anthropicsdk.ToolUnionParam {
 	if len(defs) == 0 {
 		return nil
@@ -50,7 +50,7 @@ func toAnthropicTools(defs []kiln.ToolDefinition) []anthropicsdk.ToolUnionParam 
 	return tools
 }
 
-// toAnthropicMessages converts Forge conversation messages into Anthropic message params.
+// toAnthropicMessages converts Kiln conversation messages into Anthropic message params.
 // Messages that carry no renderable content are dropped: Anthropic rejects empty blocks.
 func toAnthropicMessages(messages []kiln.Message) []anthropicsdk.MessageParam {
 	out := make([]anthropicsdk.MessageParam, 0, len(messages))
@@ -67,7 +67,7 @@ func toAnthropicMessages(messages []kiln.Message) []anthropicsdk.MessageParam {
 	return out
 }
 
-// toAnthropicMessage converts one Forge message into an Anthropic message param.
+// toAnthropicMessage converts one Kiln message into an Anthropic message param.
 // Tool results travel as user messages, which is the shape Anthropic expects.
 func toAnthropicMessage(msg kiln.Message) (anthropicsdk.MessageParam, bool) {
 	switch msg.Role {
@@ -114,7 +114,7 @@ func toolResultBlocks(msg kiln.Message) []anthropicsdk.ContentBlockParamUnion {
 	return blocks
 }
 
-// providerResponse adapts an Anthropic message response into Forge's provider response.
+// providerResponse adapts an Anthropic message response into Kiln's provider response.
 func providerResponse(apiResp *anthropicsdk.Message) *kiln.ProviderResponse {
 	return &kiln.ProviderResponse{
 		Messages:     []kiln.Message{{Role: kiln.RoleAssistant, Content: fromAnthropicContent(apiResp.Content)}},
@@ -126,7 +126,7 @@ func providerResponse(apiResp *anthropicsdk.Message) *kiln.ProviderResponse {
 	}
 }
 
-// fromAnthropicContent converts Anthropic response blocks into Forge content blocks.
+// fromAnthropicContent converts Anthropic response blocks into Kiln content blocks.
 func fromAnthropicContent(content []anthropicsdk.ContentBlockUnion) []kiln.ContentBlock {
 	blocks := make([]kiln.ContentBlock, 0, len(content))
 	for _, c := range content {
@@ -146,7 +146,7 @@ func fromAnthropicContent(content []anthropicsdk.ContentBlockUnion) []kiln.Conte
 	return blocks
 }
 
-// finishReason maps Anthropic stop reasons onto Forge finish reasons.
+// finishReason maps Anthropic stop reasons onto Kiln finish reasons.
 func finishReason(stopReason anthropicsdk.StopReason) kiln.FinishReason {
 	if stopReason == anthropicsdk.StopReasonToolUse {
 		return kiln.FinishReasonToolUse

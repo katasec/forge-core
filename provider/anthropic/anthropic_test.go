@@ -134,7 +134,7 @@ type usageBlock struct {
 }
 
 // TestGenerateSendsToolsAndParsesToolUse covers the full tool round trip: the
-// definitions reach the wire, and a tool_use response becomes a Forge ToolCall.
+// definitions reach the wire, and a tool_use response becomes a Kiln ToolCall.
 func TestGenerateSendsToolsAndParsesToolUse(t *testing.T) {
 	var got toolRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

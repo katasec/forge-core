@@ -12,7 +12,7 @@ import (
 	"github.com/katasec/kiln/message"
 )
 
-// buildRequest adapts a Forge provider request into xAI's OpenAI-compatible parameters.
+// buildRequest adapts a Kiln provider request into xAI's OpenAI-compatible parameters.
 func (p *XAIProvider) buildRequest(req kiln.ProviderRequest) (responses.ResponseNewParams, error) {
 	input, err := toXAIMessages(req.Messages)
 	if err != nil {
@@ -31,7 +31,7 @@ func (p *XAIProvider) buildRequest(req kiln.ProviderRequest) (responses.Response
 	return apiReq, nil
 }
 
-// toXAIMessages converts Forge conversation messages into xAI response input items.
+// toXAIMessages converts Kiln conversation messages into xAI response input items.
 func toXAIMessages(msgs []kiln.Message) (responses.ResponseInputParam, error) {
 	var items responses.ResponseInputParam
 
@@ -48,7 +48,7 @@ func toXAIMessages(msgs []kiln.Message) (responses.ResponseInputParam, error) {
 	return items, nil
 }
 
-// toXAIMessage converts one Forge message into xAI response input items.
+// toXAIMessage converts one Kiln message into xAI response input items.
 func toXAIMessage(m kiln.Message) ([]responses.ResponseInputItemUnionParam, error) {
 	if m.Role == kiln.RoleTool && len(m.ToolResults()) > 0 {
 		return toXAIToolResults(m.ToolResults()), nil
@@ -62,7 +62,7 @@ func toXAIMessage(m kiln.Message) ([]responses.ResponseInputItemUnionParam, erro
 	return []responses.ResponseInputItemUnionParam{item}, nil
 }
 
-// toXAIToolResults converts Forge tool results into xAI function call outputs.
+// toXAIToolResults converts Kiln tool results into xAI function call outputs.
 func toXAIToolResults(results []kiln.ToolResult) []responses.ResponseInputItemUnionParam {
 	items := make([]responses.ResponseInputItemUnionParam, 0, len(results))
 	for _, tr := range results {
@@ -73,7 +73,7 @@ func toXAIToolResults(results []kiln.ToolResult) []responses.ResponseInputItemUn
 	return items
 }
 
-// toXAITools converts Forge tool definitions into xAI request tools.
+// toXAITools converts Kiln tool definitions into xAI request tools.
 func toXAITools(defs []kiln.ToolDefinition) []requestTool {
 	tools := make([]requestTool, 0, len(defs))
 	for _, d := range defs {
@@ -87,7 +87,7 @@ func toXAITools(defs []kiln.ToolDefinition) []requestTool {
 	return tools
 }
 
-// providerResponse adapts an xAI response into Forge's provider response and citations.
+// providerResponse adapts an xAI response into Kiln's provider response and citations.
 func providerResponse(resp *response) (*kiln.ProviderResponse, []Citation) {
 	content, toolCalls, citations := fromXAIOutput(resp.Output)
 
@@ -147,7 +147,7 @@ func fromXAIMessageOutput(content []contentItem) (string, []Citation) {
 	return text, citations
 }
 
-// fromXAIAnnotations converts xAI URL annotations into Forge citations.
+// fromXAIAnnotations converts xAI URL annotations into Kiln citations.
 func fromXAIAnnotations(annotations []annotation) []Citation {
 	var citations []Citation
 	for _, a := range annotations {

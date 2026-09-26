@@ -43,7 +43,7 @@ func New(apiKey string, model Model, opts ...Option) *AnthropicProvider {
 	return p
 }
 
-// Capabilities describes the Anthropic provider features Forge currently supports.
+// Capabilities describes the Anthropic provider features Kiln currently supports.
 func (p *AnthropicProvider) Capabilities() kiln.Capabilities {
 	return kiln.Capabilities{
 		Tools:      true,

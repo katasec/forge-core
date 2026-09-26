@@ -47,7 +47,7 @@ func New(apiKey string, model Model, opts ...Option) *XAIProvider {
 	return p
 }
 
-// Capabilities describes the xAI provider features Forge currently supports.
+// Capabilities describes the xAI provider features Kiln currently supports.
 func (p *XAIProvider) Capabilities() kiln.Capabilities {
 	return kiln.Capabilities{
 		Tools:      true,

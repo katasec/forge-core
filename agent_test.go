@@ -225,9 +225,9 @@ func TestAgentAskPreservesDefaultConversation(t *testing.T) {
 func TestAgentAskInUsesNamedConversations(t *testing.T) {
 	provider := &recordingProvider{
 		responses: []*ProviderResponse{
-			{Messages: []Message{message.AssistantText("forge noted")}, FinishReason: FinishReasonStop},
+			{Messages: []Message{message.AssistantText("kiln noted")}, FinishReason: FinishReasonStop},
 			{Messages: []Message{message.AssistantText("other noted")}, FinishReason: FinishReasonStop},
-			{Messages: []Message{message.AssistantText("forge remembered")}, FinishReason: FinishReasonStop},
+			{Messages: []Message{message.AssistantText("kiln remembered")}, FinishReason: FinishReasonStop},
 		},
 	}
 
@@ -236,25 +236,25 @@ func TestAgentAskInUsesNamedConversations(t *testing.T) {
 		t.Fatalf("NewAgent error: %v", err)
 	}
 
-	if _, err := agent.AskIn(context.Background(), "forge", "Remember forge."); err != nil {
-		t.Fatalf("AskIn forge error: %v", err)
+	if _, err := agent.AskIn(context.Background(), "kiln", "Remember kiln."); err != nil {
+		t.Fatalf("AskIn kiln error: %v", err)
 	}
 	if _, err := agent.AskIn(context.Background(), "other", "Remember other."); err != nil {
 		t.Fatalf("AskIn other error: %v", err)
 	}
-	resp, err := agent.AskIn(context.Background(), "forge", "What did I ask you to remember?")
+	resp, err := agent.AskIn(context.Background(), "kiln", "What did I ask you to remember?")
 	if err != nil {
-		t.Fatalf("AskIn forge follow-up error: %v", err)
+		t.Fatalf("AskIn kiln follow-up error: %v", err)
 	}
 
-	if resp.ConversationID != "forge" {
-		t.Fatalf("conversation ID = %q, want forge", resp.ConversationID)
+	if resp.ConversationID != "kiln" {
+		t.Fatalf("conversation ID = %q, want kiln", resp.ConversationID)
 	}
 	if len(provider.requests[2].Messages) != 3 {
-		t.Fatalf("forge follow-up messages = %d, want 3", len(provider.requests[2].Messages))
+		t.Fatalf("kiln follow-up messages = %d, want 3", len(provider.requests[2].Messages))
 	}
-	if provider.requests[2].Messages[0].Text() != "Remember forge." {
-		t.Errorf("first forge message = %q", provider.requests[2].Messages[0].Text())
+	if provider.requests[2].Messages[0].Text() != "Remember kiln." {
+		t.Errorf("first kiln message = %q", provider.requests[2].Messages[0].Text())
 	}
 }
 

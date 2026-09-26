@@ -243,7 +243,7 @@ type outputTokensDetails struct {
 
 // TestGenerateSendsToolsAndParsesFunctionCall covers the OpenAI tool round
 // trip: definitions reach the wire and a function_call output becomes a
-// Forge ToolCall.
+// Kiln ToolCall.
 func TestGenerateSendsToolsAndParsesFunctionCall(t *testing.T) {
 	var got toolWireRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

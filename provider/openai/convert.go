@@ -15,7 +15,7 @@ import (
 	"github.com/katasec/kiln/tool"
 )
 
-// buildRequest adapts a Forge provider request into OpenAI Responses parameters.
+// buildRequest adapts a Kiln provider request into OpenAI Responses parameters.
 func (p *OpenAIProvider) buildRequest(req kiln.ProviderRequest) (responses.ResponseNewParams, error) {
 	input, err := toOpenAIMessages(req.Messages)
 	if err != nil {
@@ -31,7 +31,7 @@ func (p *OpenAIProvider) buildRequest(req kiln.ProviderRequest) (responses.Respo
 	}, nil
 }
 
-// toOpenAITools converts Forge tool definitions into OpenAI function tools.
+// toOpenAITools converts Kiln tool definitions into OpenAI function tools.
 // Strict mode is left off: it imposes schema rules the reflected schemas do
 // not necessarily satisfy.
 func toOpenAITools(defs []kiln.ToolDefinition) []responses.ToolUnionParam {
@@ -50,7 +50,7 @@ func toOpenAITools(defs []kiln.ToolDefinition) []responses.ToolUnionParam {
 	return tools
 }
 
-// providerResponse adapts an OpenAI Responses result into Forge's provider response.
+// providerResponse adapts an OpenAI Responses result into Kiln's provider response.
 func providerResponse(apiResp *responses.Response) (*kiln.ProviderResponse, error) {
 	blocks := fromOpenAIOutput(apiResp)
 	if len(blocks) == 0 {
@@ -70,7 +70,7 @@ func providerResponse(apiResp *responses.Response) (*kiln.ProviderResponse, erro
 	}, nil
 }
 
-// toOpenAIMessages converts Forge conversation messages into OpenAI response input items.
+// toOpenAIMessages converts Kiln conversation messages into OpenAI response input items.
 func toOpenAIMessages(messages []kiln.Message) (responses.ResponseInputParam, error) {
 	items := make(responses.ResponseInputParam, 0, len(messages))
 	for _, msg := range messages {
@@ -87,9 +87,9 @@ func toOpenAIMessages(messages []kiln.Message) (responses.ResponseInputParam, er
 	return items, nil
 }
 
-// toOpenAIMessage converts one Forge message into OpenAI response input items.
+// toOpenAIMessage converts one Kiln message into OpenAI response input items.
 // Tool calls and tool results are separate items in the Responses API, so a
-// single Forge message can expand into several.
+// single Kiln message can expand into several.
 func toOpenAIMessage(msg kiln.Message) ([]responses.ResponseInputItemUnionParam, error) {
 	if results := msg.ToolResults(); len(results) > 0 {
 		return toOpenAIToolResults(results), nil
@@ -139,7 +139,7 @@ func toOpenAIToolResults(results []kiln.ToolResult) []responses.ResponseInputIte
 	return items
 }
 
-// fromOpenAIOutput converts OpenAI output items into Forge content blocks.
+// fromOpenAIOutput converts OpenAI output items into Kiln content blocks.
 func fromOpenAIOutput(apiResp *responses.Response) []kiln.ContentBlock {
 	var blocks []kiln.ContentBlock
 	if text := apiResp.OutputText(); text != "" {
@@ -168,7 +168,7 @@ func finishReason(blocks []kiln.ContentBlock) kiln.FinishReason {
 	return kiln.FinishReasonStop
 }
 
-// toOpenAIContent converts Forge content blocks into OpenAI message content parts.
+// toOpenAIContent converts Kiln content blocks into OpenAI message content parts.
 func toOpenAIContent(role kiln.Role, blocks []kiln.ContentBlock) (responses.ResponseInputMessageContentListParam, error) {
 	content := make(responses.ResponseInputMessageContentListParam, 0, len(blocks))
 	for _, block := range blocks {
@@ -181,7 +181,7 @@ func toOpenAIContent(role kiln.Role, blocks []kiln.ContentBlock) (responses.Resp
 	return content, nil
 }
 
-// toOpenAIContentBlock converts one Forge content block into an OpenAI content part.
+// toOpenAIContentBlock converts one Kiln content block into an OpenAI content part.
 func toOpenAIContentBlock(role kiln.Role, block kiln.ContentBlock) (responses.ResponseInputContentUnionParam, error) {
 	switch block.Type {
 	case kiln.ContentTypeText:
@@ -200,7 +200,7 @@ func toOpenAITextContent(_ kiln.Role, text string) responses.ResponseInputConten
 	return responses.ResponseInputContentParamOfInputText(text)
 }
 
-// toOpenAIImageContent wraps Forge image content as an OpenAI input image content part.
+// toOpenAIImageContent wraps Kiln image content as an OpenAI input image content part.
 func toOpenAIImageContent(role kiln.Role, block kiln.ContentBlock) (responses.ResponseInputContentUnionParam, error) {
 	if role != kiln.RoleUser {
 		return responses.ResponseInputContentUnionParam{}, fmt.Errorf("openai image content is only supported for user messages")

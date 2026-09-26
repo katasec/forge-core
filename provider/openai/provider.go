@@ -35,7 +35,7 @@ func New(apiKey string, model Model, opts ...Option) *OpenAIProvider {
 	return p
 }
 
-// Capabilities describes the OpenAI provider features Forge currently supports.
+// Capabilities describes the OpenAI provider features Kiln currently supports.
 func (p *OpenAIProvider) Capabilities() kiln.Capabilities {
 	return kiln.Capabilities{
 		Tools:      true,

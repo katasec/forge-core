@@ -1,4 +1,4 @@
-// Package tests holds end-to-end smoke tests that exercise the public Forge Core
+// Package tests holds end-to-end smoke tests that exercise the public Kiln
 // contract across packages, using a real on-disk agent package under testdata/.
 package tests
 

@@ -32,7 +32,7 @@ type Agent struct {
 // NewAgent creates an Agent from the given Config.
 func NewAgent(cfg Config) (*Agent, error) {
 	if cfg.Provider == nil {
-		return nil, errors.New("forge: provider must not be nil")
+		return nil, errors.New("kiln: provider must not be nil")
 	}
 
 	registry := buildRegistry(cfg.Tools)

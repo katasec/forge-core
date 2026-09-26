@@ -11,7 +11,7 @@ import (
 // ManifestSchemaV1 is the schema identifier for the v1 agent-package manifest.
 const ManifestSchemaV1 = "forge.agent.v1"
 
-// Manifest is the packaged (machine) representation of a Forge agent package. It
+// Manifest is the packaged (machine) representation of a Kiln agent package. It
 // is authored in HCL and compiled to this JSON for distribution inside an OCI
 // artifact, so it can be inspected, validated, and consumed without an HCL parser.
 type Manifest struct {
@@ -72,7 +72,7 @@ func (m *Manifest) Validate() error {
 }
 
 // GatewayConsumable reports whether the package can be served entirely through
-// Forge Core / the gateway without a host process Runner — i.e. all of its
+// Kiln / the gateway without a host process Runner — i.e. all of its
 // skills are KindContext. This is the A-layer/B-layer boundary computed at the
 // manifest level: a package crosses into "needs a host" the moment it ships a
 // KindProcess skill.

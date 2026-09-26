@@ -1,8 +1,8 @@
 // Package markdown provides the built-in context Runner. It is the one Runner
-// Forge Core ships, because context skills are enrichment assets that are not
+// Kiln ships, because context skills are enrichment assets that are not
 // executed: the runner loads the skill's entrypoint file and returns its content
 // for injection into the agent's context. There is no process, filesystem
-// mutation, or sandbox involved, so it is safe to run in-process inside Forge
+// mutation, or sandbox involved, so it is safe to run in-process inside Kiln
 // Core / the gateway.
 //
 // Process skills (python, shell, ...) are intentionally NOT handled here; they

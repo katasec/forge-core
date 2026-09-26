@@ -1,7 +1,7 @@
-// Package skill defines the contract for packaged skills: the unit Forge
+// Package skill defines the contract for packaged skills: the unit Kiln
 // distributes inside an agent package.
 //
-// Forge Core is the interpreter and contract definer, NOT a sandbox. It parses
+// Kiln is the interpreter and contract definer, NOT a sandbox. It parses
 // the skill manifest, models skills, and defines the Runner interface used to
 // execute them. It ships only the in-process context Runner (see skill/markdown);
 // process skills require a host-provided Runner that owns the process boundary
@@ -11,9 +11,9 @@
 //
 //   - KindContext skills are enrichment assets. They are not executed; their
 //     content is loaded and injected into the agent's context. They are safe to
-//     run in-process inside Forge Core / the gateway.
+//     run in-process inside Kiln / the gateway.
 //   - KindProcess skills execute as an external process (python, shell, ...).
-//     Forge Core never runs them by default; they require a host-provided Runner.
+//     Kiln never runs them by default; they require a host-provided Runner.
 //
 // A package whose skills are all KindContext is gateway-consumable; the moment a
 // package ships a KindProcess skill it requires a host with an execution-capable
@@ -34,10 +34,10 @@ type Kind string
 
 const (
 	// KindContext skills are enrichment assets: not executed, injected as context.
-	// Safe to run in-process inside Forge Core / the gateway.
+	// Safe to run in-process inside Kiln / the gateway.
 	KindContext Kind = "context"
 	// KindProcess skills execute as an external process. They require a
-	// host-provided Runner with explicit execution authority; Forge Core never
+	// host-provided Runner with explicit execution authority; Kiln never
 	// runs them by default.
 	KindProcess Kind = "process"
 )
@@ -68,7 +68,7 @@ type Spec struct {
 	// Outputs is an optional JSON Schema describing the skill's output.
 	Outputs json.RawMessage `json:"outputs,omitempty"`
 	// Permissions are capability requests declared by the skill (e.g. "net",
-	// "fs:write"). Forge Core surfaces and validates these; it does NOT enforce
+	// "fs:write"). Kiln surfaces and validates these; it does NOT enforce
 	// them. Enforcement belongs to the Runner/gateway/host that owns the process
 	// boundary.
 	Permissions []string `json:"permissions,omitempty"`
@@ -134,7 +134,7 @@ func Failure(msg string) Result {
 	return Result{Schema: ResultSchemaV1, Status: StatusError, Output: json.RawMessage("{}"), Error: &msg}
 }
 
-// Runner executes skills of a particular runner type. Forge Core ships only the
+// Runner executes skills of a particular runner type. Kiln ships only the
 // in-process context Runner (skill/markdown); process Runners must be supplied by
 // the host/gateway, which owns the process boundary and enforces permissions.
 type Runner interface {
