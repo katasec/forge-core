@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/katasec/forge-core"
@@ -357,4 +358,66 @@ type toolWireInput struct {
 	CallID string `json:"call_id"`
 	Name   string `json:"name"`
 	Output string `json:"output"`
+}
+
+// TestGenerateReplaysAssistantHistory guards multi-turn conversations: OpenAI
+// rejects input_text on an assistant message ("Supported values are:
+// 'output_text' and 'refusal'"), so a remembered assistant turn must not be
+// sent as input_text content parts.
+func TestGenerateReplaysAssistantHistory(t *testing.T) {
+	var got struct {
+		Input []struct {
+			Role    string          `json:"role"`
+			Content json.RawMessage `json:"content"`
+		} `json:"input"`
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"output": []map[string]any{{
+				"type": "message", "role": "assistant",
+				"content": []map[string]any{{"type": "output_text", "text": "sure"}},
+			}},
+			"usage": map[string]any{"input_tokens": 1, "output_tokens": 1},
+		})
+	}))
+	defer srv.Close()
+
+	p := New("test-key", ModelGPT54Nano, WithBaseURL(srv.URL))
+	_, err := p.Generate(context.Background(), forge.ProviderRequest{
+		Messages: []forge.Message{
+			message.UserText("who made you?"),
+			message.AssistantText("OpenAI made me."),
+			message.UserText("what is 21 + 21?"),
+		},
+	})
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+
+	if len(got.Input) != 3 {
+		t.Fatalf("input items = %d, want 3", len(got.Input))
+	}
+	assistant := got.Input[1]
+	if assistant.Role != "assistant" {
+		t.Fatalf("item[1] role = %q, want assistant", assistant.Role)
+	}
+	if strings.Contains(string(assistant.Content), "input_text") {
+		t.Errorf("assistant content = %s, must not use input_text", assistant.Content)
+	}
+	// The plain-string form lets the API choose the right content type.
+	var text string
+	if err := json.Unmarshal(assistant.Content, &text); err != nil {
+		t.Errorf("assistant content = %s, want a plain JSON string: %v", assistant.Content, err)
+	}
+	if text != "OpenAI made me." {
+		t.Errorf("assistant text = %q, want %q", text, "OpenAI made me.")
+	}
+	// A user turn still uses input_text content parts.
+	if !strings.Contains(string(got.Input[0].Content), "input_text") {
+		t.Errorf("user content = %s, want input_text parts", got.Input[0].Content)
+	}
 }
