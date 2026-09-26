@@ -11,9 +11,8 @@ import (
 // ManifestSchemaV1 is the schema identifier for the v1 agent-package manifest.
 const ManifestSchemaV1 = "forge.agent.v1"
 
-// Manifest is the packaged (machine) representation of a Kiln agent package. It
-// is authored in HCL and compiled to this JSON for distribution inside an OCI
-// artifact, so it can be inspected, validated, and consumed without an HCL parser.
+// Manifest is the packaged (machine) representation of a Kiln agent package,
+// the JSON form distributed inside an OCI artifact.
 type Manifest struct {
 	// SchemaVersion identifies the manifest schema (e.g. ManifestSchemaV1).
 	SchemaVersion string `json:"schema_version"`

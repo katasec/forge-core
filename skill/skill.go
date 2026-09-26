@@ -47,9 +47,8 @@ func (k Kind) Valid() bool {
 	return k == KindContext || k == KindProcess
 }
 
-// Spec is the manifest description of a single skill. It is authored in HCL and
-// compiled to JSON for distribution inside an OCI artifact; this struct is the
-// JSON (machine) representation.
+// Spec is the manifest description of a single skill: the JSON (machine)
+// representation distributed inside an OCI artifact.
 type Spec struct {
 	// Name is the unique identifier of the skill within its package.
 	Name string `json:"name"`
