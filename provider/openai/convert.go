@@ -98,6 +98,15 @@ func toOpenAIMessage(msg forge.Message) ([]responses.ResponseInputItemUnionParam
 		return toOpenAIToolCalls(msg, calls), nil
 	}
 
+	// An assistant turn replayed from memory must carry output_text, not the
+	// input_text parts a user turn uses: OpenAI rejects input_text on an
+	// assistant message. The plain-string form lets the API pick the right one.
+	if msg.Role == forge.RoleAssistant {
+		return []responses.ResponseInputItemUnionParam{
+			responses.ResponseInputItemParamOfMessage(msg.Text(), responses.EasyInputMessageRole(msg.Role)),
+		}, nil
+	}
+
 	content, err := toOpenAIContent(msg.Role, msg.Content)
 	if err != nil {
 		return nil, err
