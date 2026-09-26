@@ -35,3 +35,9 @@ jobs:
 
       - name: Run tests
         run: go test ./...
+
+      - name: Build examples
+        run: |
+          for dir in _examples/*/; do
+            (cd "$dir" && go vet ./... && go build -o /dev/null ./...)
+          done
